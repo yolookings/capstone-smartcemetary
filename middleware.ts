@@ -29,16 +29,15 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
 
-  const isProtectedRoute = pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/admin')
-  const isAdminRoute = pathname.startsWith('/dashboard/admin')
   const isAuthRoute = pathname.startsWith('/auth/login') || pathname.startsWith('/auth/register')
+  const isUserDashboard = pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/admin')
+  const isAdminRoute = pathname.startsWith('/dashboard/admin')
 
-  if (!user && (isProtectedRoute || isAdminRoute)) {
+  if (!user && (isUserDashboard || isAdminRoute)) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('redirect', pathname)
@@ -49,6 +48,26 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
+  }
+
+  if (user && isAdminRoute) {
+    const profileRes = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=role`,
+      {
+        headers: {
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+      }
+    )
+    const profiles = await profileRes.json()
+    const userRole = profiles?.[0]?.role
+
+    if (userRole !== 'ADMIN') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

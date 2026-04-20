@@ -49,8 +49,11 @@ export default function PengajuanDetailPage({ params }: Props) {
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
   const [documents, setDocuments] = useState<Dokumen[]>([]);
   const [updating, setUpdating] = useState(false);
+  const [allocating, setAllocating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Dokumen | null>(null);
   const [id, setId] = useState<string>("");
+  const [blok, setBlok] = useState("");
+  const [nomor, setNomor] = useState("");
 
   useEffect(() => {
     params.then(p => {
@@ -117,11 +120,41 @@ export default function PengajuanDetailPage({ params }: Props) {
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ expiresIn: 300 }),
       }
     );
     const data = await res.json();
     return `${SUPABASE_URL}/storage/v1${data.signedURL}`;
+  };
+
+  const allocateGrave = async () => {
+    if (!blok || !nomor) return;
+    setAllocating(true);
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/makam?pengajuan_id=eq.${id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
+          blok: blok.toUpperCase(),
+          nomor: nomor.toUpperCase(),
+          status: 'RESERVED',
+        }),
+      }
+    );
+
+    fetchData(id);
+    setAllocating(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -239,15 +272,35 @@ export default function PengajuanDetailPage({ params }: Props) {
               <h3 className="font-bold text-slate-900">Alokasi Lokasi Makam</h3>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Blok</p>
-                <p className="text-slate-800 font-semibold text-lg">{pengajuan.makam?.blok || 'Belum ditentukan'}</p>
+              <div>
+                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Blok</p>
+                <input
+                  type="text"
+                  value={blok || pengajuan.makam?.blok || ''}
+                  onChange={(e) => setBlok(e.target.value)}
+                  placeholder="Contoh: A, B, C"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500 transition-colors"
+                />
               </div>
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Nomor</p>
-                <p className="text-slate-800 font-semibold text-lg">{pengajuan.makam?.nomor || 'Belum ditentukan'}</p>
+              <div>
+                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Nomor</p>
+                <input
+                  type="text"
+                  value={nomor || pengajuan.makam?.nomor || ''}
+                  onChange={(e) => setNomor(e.target.value)}
+                  placeholder="Contoh: 01, 02, 03"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500 transition-colors"
+                />
               </div>
             </div>
+            <button
+              onClick={allocateGrave}
+              disabled={allocating || (!blok && !nomor)}
+              className="mt-4 w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <MapPin size={18} />
+              {allocating ? 'Menyimpan...' : 'Simpan Lokasi'}
+            </button>
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">

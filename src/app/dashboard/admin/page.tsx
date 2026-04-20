@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/browser";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, FileText, Clock, LayoutDashboard, Database, UserCheck, TrendingUp, Bell, Settings, CheckCircle, XCircle, AlertCircle, Filter } from "lucide-react";
+import { Eye, FileText, Clock, LayoutDashboard, Database, UserCheck, CheckCircle, XCircle, AlertCircle, Filter, Shield, LogOut } from "lucide-react";
 
 interface PengajuanWithRelations {
   id: string;
@@ -22,18 +22,26 @@ interface PengajuanWithRelations {
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [pengajuanList, setPengajuanList] = useState<PengajuanWithRelations[]>([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, revision: 0, rejected: 0 });
   const [filter, setFilter] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const fetchData = async () => {
+    try {
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!SUPABASE_URL || !SUPABASE_KEY) {
+        setError("Konfigurasi Supabase tidak ditemukan");
+        setLoading(false);
+        return;
+      }
 
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/pengajuan?select=*,profiles(email,full_name),makam(deceased_name,blok,nomor)&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/pengajuan?select=*&order=created_at.desc`,
         {
           headers: {
             'apikey': SUPABASE_KEY,
@@ -41,15 +49,48 @@ export default function AdminDashboardPage() {
           },
         }
       );
-      const data: PengajuanWithRelations[] = await res.json();
-      setPengajuanList(data || []);
 
-      const pending = data.filter(p => p.status === 'PENDING').length;
-      const approved = data.filter(p => p.status === 'APPROVED').length;
-      const revision = data.filter(p => p.status === 'REVISION').length;
-      const rejected = data.filter(p => p.status === 'REJECTED').length;
+      if (!res.ok) {
+        setError(`Error fetching: ${res.status}`);
+        setLoading(false);
+        return;
+      }
+
+      const data: any[] = await res.json();
+      
+      const userIds = [...new Set(data.map(p => p.user_id).filter(Boolean))];
+      let profilesMap: Record<string, {email: string, full_name: string}> = {};
+      
+      if (userIds.length > 0) {
+        const userIdsStr = userIds.map(id => `id=eq.${id}`).join(',');
+        const profilesRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?or=(${userIdsStr})&select=id,email,full_name`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+            },
+          }
+        );
+        const profilesData = await profilesRes.json();
+        profilesData?.forEach((profile: any) => {
+          profilesMap[profile.id] = { email: profile.email, full_name: profile.full_name };
+        });
+      }
+
+      const enrichedData: PengajuanWithRelations[] = data.map(p => ({
+        ...p,
+        profiles: profilesMap[p.user_id] || null
+      }));
+      
+      setPengajuanList(enrichedData);
+
+      const pending = enrichedData.filter(p => p.status === 'PENDING').length;
+      const approved = enrichedData.filter(p => p.status === 'APPROVED').length;
+      const revision = enrichedData.filter(p => p.status === 'REVISION').length;
+      const rejected = enrichedData.filter(p => p.status === 'REJECTED').length;
       setStats({
-        total: data.length,
+        total: enrichedData.length,
         pending,
         approved,
         revision,
@@ -57,9 +98,54 @@ export default function AdminDashboardPage() {
       });
 
       setLoading(false);
+    } catch (err) {
+      setError("Gagal mengambil data");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!SUPABASE_URL || !SUPABASE_KEY) {
+        setError("Konfigurasi tidak ditemukan");
+        setLoading(false);
+        return;
+      }
+
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { 'apikey': SUPABASE_KEY }
+      });
+      const userData = await userRes.json();
+      const user = userData?.data?.user;
+
+      if (!user?.id) {
+        router.push('/auth/login?redirect=/dashboard/admin');
+        return;
+      }
+
+      const profileRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=role`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
+      const profileData = await profileRes.json();
+      
+      if (!profileData[0] || profileData[0].role !== 'ADMIN') {
+        router.push('/dashboard');
+        return;
+      }
+
+      fetchData();
     };
 
-    fetchData();
+    checkAuth();
   }, []);
 
   const filteredList = filter 
@@ -72,6 +158,18 @@ export default function AdminDashboardPage() {
     </div>
   );
 
+  if (error) return (
+    <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+      <div className="text-center">
+        <AlertCircle className="mx-auto text-red-500 mb-2" size={48} />
+        <p className="text-slate-600 font-medium">{error}</p>
+        <button onClick={fetchData} className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg">
+          Coba Lagi
+        </button>
+      </div>
+    </div>
+  );
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING': return 'bg-amber-100 text-amber-700 border-amber-200';
@@ -79,16 +177,6 @@ export default function AdminDashboardPage() {
       case 'REVISION': return 'bg-rose-100 text-rose-700 border-rose-200';
       case 'REJECTED': return 'bg-slate-100 text-slate-700 border-slate-200';
       default: return 'bg-slate-100 text-slate-700';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PENDING': return <Clock size={14} />;
-      case 'APPROVED': return <CheckCircle size={14} />;
-      case 'REVISION': return <AlertCircle size={14} />;
-      case 'REJECTED': return <XCircle size={14} />;
-      default: return <Clock size={14} />;
     }
   };
 
@@ -107,23 +195,25 @@ export default function AdminDashboardPage() {
       <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-4 space-y-2 overflow-y-auto">
         <div className="px-3 py-4">
           <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center mb-3">
-            <LayoutDashboard className="text-white" size={20} />
+            <Shield className="text-white" size={20} />
           </div>
           <h2 className="font-bold text-slate-900">Admin Panel</h2>
           <p className="text-xs text-slate-500">Smart Cemetery</p>
         </div>
         
         <div className="space-y-1">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">Menu Utama</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">Menu Validasi</p>
           <AdminNavLink icon={<LayoutDashboard size={18} />} label="Dashboard" active />
           <AdminNavLink icon={<FileText size={18} />} label="Semua Pengajuan" />
-          <AdminNavLink icon={<UserCheck size={18} />} label="Verifikasi Dokumen" />
+          <AdminNavLink icon={<UserCheck size={18} />} label="Verifikasi" />
           <AdminNavLink icon={<Database size={18} />} label="Data Makam" />
         </div>
         
-        <div className="pt-4 border-t border-slate-100 space-y-1">
-          <AdminNavLink icon={<Bell size={18} />} label="Notifikasi" />
-          <AdminNavLink icon={<Settings size={18} />} label="Pengaturan" />
+        <div className="pt-4 border-t border-slate-100">
+          <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
+            <LogOut size={18} />
+            <span className="text-sm font-semibold">Mode User</span>
+          </Link>
         </div>
       </aside>
 
@@ -131,19 +221,8 @@ export default function AdminDashboardPage() {
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex justify-between items-end">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Dashboard Admin</h1>
-              <p className="text-slate-500 text-sm mt-1">Pantau dan verifikasi pengajuan makam</p>
-            </div>
-            <div className="px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm text-xs font-medium text-slate-500 flex items-center gap-2">
-              <Clock size={14} />
-              {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Dashboard Admin</h1>
-              <p className="text-slate-500 text-sm mt-1">Pantau dan verifikasi pengajuan makam</p>
+              <h1 className="text-3xl font-bold text-slate-900">Validasi Pengajuan</h1>
+              <p className="text-slate-500 text-sm mt-1">Verifikasi dan approve pengajuan makam</p>
             </div>
             <div className="px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm text-xs font-medium text-slate-500 flex items-center gap-2">
               <Clock size={14} />
@@ -209,7 +288,6 @@ export default function AdminDashboardPage() {
                   <thead>
                     <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider">
                       <th className="text-left px-6 py-4">Pemohon</th>
-                      <th className="text-left px-6 py-4">Nama Mendiang</th>
                       <th className="text-left px-6 py-4">Lokasi</th>
                       <th className="text-left px-6 py-4">Tanggal</th>
                       <th className="text-left px-6 py-4">Status</th>
@@ -230,9 +308,6 @@ export default function AdminDashboardPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                          {p.makam?.deceased_name || '-'}
-                        </td>
                         <td className="px-6 py-4 text-sm text-slate-600">
                           {p.makam?.blok ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-medium">
@@ -249,7 +324,6 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(p.status)}`}>
-                            {getStatusIcon(p.status)}
                             {getStatusLabel(p.status)}
                           </span>
                         </td>
@@ -293,14 +367,6 @@ function AdminNavLink({ icon, label, active = false }: { icon: React.ReactNode, 
 }
 
 function StatCard({ label, value, icon, color, active, onClick }: { label: string; value: number; icon: React.ReactNode; color: string; active?: boolean; onClick?: () => void }) {
-  const colorMap: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-200',
-    amber: 'bg-amber-50 text-amber-600 border-amber-200',
-    rose: 'bg-rose-50 text-rose-600 border-rose-200',
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-    slate: 'bg-slate-50 text-slate-600 border-slate-200',
-  };
-
   const activeColorMap: Record<string, string> = {
     blue: 'bg-blue-600 text-white border-blue-600',
     amber: 'bg-amber-500 text-white border-amber-500',
@@ -312,10 +378,10 @@ function StatCard({ label, value, icon, color, active, onClick }: { label: strin
   return (
     <button 
       onClick={onClick}
-      className={`p-5 rounded-2xl border-2 transition-all text-left ${active ? activeColorMap[color] : colorMap[color]} ${active ? 'shadow-lg' : 'hover:shadow-md'}`}
+      className={`p-5 rounded-2xl border-2 transition-all text-left ${active ? activeColorMap[color] : 'bg-white border-slate-200 hover:border-emerald-300'}`}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className={`text-xs font-bold uppercase tracking-wider ${active ? 'text-white/80' : ''}`}>{label}</span>
+        <span className={`text-xs font-bold uppercase tracking-wider ${active ? 'text-white/80' : 'text-slate-400'}`}>{label}</span>
         <div className={active ? '' : 'opacity-60'}>
           {icon}
         </div>
