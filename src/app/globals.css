@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #2D5A41;
+  --color-primary-dark: #1E3D2C;
+  --color-primary-light: #4A8C66;
+  
+  --color-secondary: #5A635E;
+  --color-tertiary: #764247;
+  --color-neutral: #F5F7F5;
+  
+  --font-manrope: "Manrope", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
 :root {
-  --background: #ffffff;
+  --background: #F5F7F5;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --primary: #2D5A41;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-manrope);
+  font-weight: 700;
+}
+
+.btn-primary {
+  @apply bg-primary text-white px-6 py-2.5 rounded-xl font-bold hover:bg-primary-dark transition-all;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-white px-6 py-2.5 rounded-xl font-bold hover:opacity-90 transition-all;
+}
+
+.card {
+  @apply bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden;
+}
+
+.input-pill {
+  @apply bg-white border border-slate-200 rounded-full px-6 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all;
 }
