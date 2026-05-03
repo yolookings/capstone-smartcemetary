@@ -5,8 +5,14 @@ import { Send, Bot, User, Loader2, X, MessageSquare } from "lucide-react";
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: 'ai' | 'user', content: string }[]>([
-    { role: 'ai', content: 'Halo! Saya asisten AI Smart Cemetery. Ada yang bisa saya bantu terkait prosedur atau regulasi pemakaman?' }
+  const [messages, setMessages] = useState<
+    { role: "ai" | "user"; content: string }[]
+  >([
+    {
+      role: "ai",
+      content:
+        "Halo! Saya asisten AI Smart Cemetery. Ada yang bisa saya bantu terkait prosedur atau regulasi pemakaman?",
+    },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +29,7 @@ export default function ChatWidget() {
 
     const userMsg = input;
     setInput("");
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
 
     try {
@@ -34,9 +40,12 @@ export default function ChatWidget() {
       });
 
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+      setMessages((prev) => [...prev, { role: "ai", content: data.response }]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'ai', content: 'Maaf, terjadi kesalahan koneksi.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", content: "Maaf, terjadi kesalahan koneksi." },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -45,7 +54,7 @@ export default function ChatWidget() {
   return (
     <>
       {/* Floating Action Button */}
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-8 right-8 w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-50 group"
       >
@@ -67,24 +76,38 @@ export default function ChatWidget() {
             </div>
             <div>
               <h2 className="font-bold text-lg leading-none">AI Assistant</h2>
-              <p className="text-[10px] font-bold text-primary-light uppercase tracking-widest mt-1">Smart Cemetery RAG Agent</p>
+              <p className="text-[10px] font-bold text-primary-light uppercase tracking-widest mt-1">
+                Smart Cemetery RAG Agent
+              </p>
             </div>
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral/30">
+          <div
+            ref={scrollRef}
+            className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral/30"
+          >
             {messages.map((m, i) => (
-              <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  m.role === 'ai' ? 'bg-primary/10 text-primary' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {m.role === 'ai' ? <Bot size={16} /> : <User size={16} />}
+              <div
+                key={i}
+                className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    m.role === "ai"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {m.role === "ai" ? <Bot size={16} /> : <User size={16} />}
                 </div>
-                <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
-                  m.role === 'ai' 
-                    ? 'bg-white text-slate-800 rounded-tl-none border border-slate-50' 
-                    : 'bg-primary text-white rounded-tr-none'
-                }`}>
+                <div
+                  className={`max-w-[85%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                    m.role === "ai"
+                      ? "bg-white text-slate-800 rounded-tl-none border border-slate-50"
+                      : "bg-primary text-white rounded-tr-none"
+                  }`}
+                >
                   {m.content}
                 </div>
               </div>
@@ -96,7 +119,9 @@ export default function ChatWidget() {
                 </div>
                 <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-3 border border-slate-50">
                   <Loader2 size={16} className="animate-spin text-primary" />
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Berpikir...</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">
+                    Berpikir...
+                  </p>
                 </div>
               </div>
             )}
@@ -105,15 +130,15 @@ export default function ChatWidget() {
           {/* Input */}
           <div className="p-6 bg-white border-t border-slate-100">
             <div className="flex gap-2 p-1 bg-neutral rounded-2xl border border-slate-100 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Tanyakan sesuatu..."
                 className="flex-1 px-4 py-2.5 bg-transparent outline-none text-sm text-slate-800"
               />
-              <button 
+              <button
                 onClick={handleSend}
                 disabled={!input.trim() || loading}
                 className="p-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-all disabled:opacity-50"
@@ -122,7 +147,7 @@ export default function ChatWidget() {
               </button>
             </div>
             <p className="text-[9px] text-slate-400 text-center mt-4 font-bold uppercase tracking-tighter">
-              Ditenagai oleh Qwen AI & Smart Cemetery Data
+              Ditenagai oleh Model Nvidia AI & Smart Cemetery Data
             </p>
           </div>
         </div>

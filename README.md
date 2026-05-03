@@ -100,6 +100,7 @@ CREATE TABLE public.chat_logs (
 ```
 
 3. Buat storage bucket:
+
 ```sql
 INSERT INTO storage.buckets (id, name, public, file_size_limit)
 VALUES ('documents', 'documents', false, 5242880);
@@ -116,7 +117,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 
 # OpenRouter (opsional - untuk AI chatbot)
 OPENROUTER_API_KEY="sk-or-your-key"
-AI_MODEL="qwen/qwen-2.5-coder-32b-instruct"
+AI_MODEL="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
 
 # Opsional
 NEXTAUTH_SECRET="random-secret-string"
@@ -157,20 +158,49 @@ src/
 
 ## Fitur Halaman
 
-| Halaman | Akses | Deskripsi |
-|---------|-------|------------|
-| / | Public | Home page |
-| /auth/login | Public | Login form |
-| /auth/register | Public | Registration (@gmail.com only) |
-| /dashboard | User | Dashboard + pengajuan list |
-| /dashboard/pengajuan/baru | User | Submit new pengajuan |
-| /dashboard/pengajuan | User | View status |
-| /dashboard/admin | Admin | Admin dashboard |
-| /dashboard/admin/pengajuan/[id] | Admin | Review & update status |
+| Halaman                         | Akses  | Deskripsi                      |
+| ------------------------------- | ------ | ------------------------------ |
+| /                               | Public | Home page                      |
+| /auth/login                     | Public | Login form                     |
+| /auth/register                  | Public | Registration (@gmail.com only) |
+| /dashboard                      | User   | Dashboard + pengajuan list     |
+| /dashboard/pengajuan/baru       | User   | Submit new pengajuan           |
+| /dashboard/pengajuan            | User   | View status                    |
+| /dashboard/admin                | Admin  | Admin dashboard                |
+| /dashboard/admin/pengajuan/[id] | Admin  | Review & update status         |
+
+## AI Chatbot (RAG)
+
+Sistem memiliki dua implementasi AI chatbot:
+
+### 1. Web Chatbot (Integrated)
+
+- **File**: `src/lib/ai-rag.ts`
+- **Usage**: Chat page di `/dashboard/chat`
+- **Features**: Integrated dengan Next.js, menggunakan OpenRouter API
+
+### 2. Standalone RAG Chatbot (Python)
+
+- **File**: `rag_chatbot.py`
+- **Usage**: CLI chatbot berbasis PDF regulations
+- **Features**: RAG dengan FAISS, multilingual embeddings, PDF parsing
+
+#### Setup
+
+```bash
+pip install -r requirements.txt
+python rag_chatbot.py
+```
+
+#### Requirements
+
+- Python 3.8+
+- PDF regulations di parent directory (`../*.pdf`)
+- OpenRouter API key (sudah ada di `.env`)
 
 ## Keamanan
 
-- Semua Environment Variables diabaikan oleh Git (.env*)
+- Semua Environment Variables diabaikan oleh Git (.env\*)
 - RLS (Row Level Security) diaktifkan untuk tabel sensitif
 - File upload menggunakan UUID random
 - Akses dokumen melalui Signed URL

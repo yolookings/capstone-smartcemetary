@@ -1,20 +1,21 @@
 # AGENTS.md — src/lib
 
 ## OVERVIEW
+
 Core backend utilities: authentication, AI chatbot, database connections, storage, and NextAuth config. Uses direct pg queries (not Prisma).
 
 ## FILES
 
-| File | Purpose |
-|------|---------|
-| `auth-service.ts` | User authorization via Supabase Auth |
-| `ai-rag.ts` | AI chatbot with OpenRouter (qwen model) |
-| `db.ts` | PostgreSQL connection pool (pg) |
-| `storage.ts` | Supabase Storage upload + signed URLs |
-| `supabase.ts` | Supabase client (public + admin) |
-| `init-db.ts` | Database schema initialization |
-| `auth.ts` | NextAuth v4 configuration |
-| `prisma.ts` | Prisma client (unused, kept for compatibility) |
+| File              | Purpose                                        |
+| ----------------- | ---------------------------------------------- |
+| `auth-service.ts` | User authorization via Supabase Auth           |
+| `ai-rag.ts`       | AI chatbot with OpenRouter (free)              |
+| `db.ts`           | PostgreSQL connection pool (pg)                |
+| `storage.ts`      | Supabase Storage upload + signed URLs          |
+| `supabase.ts`     | Supabase client (public + admin)               |
+| `init-db.ts`      | Database schema initialization                 |
+| `auth.ts`         | NextAuth v4 configuration                      |
+| `prisma.ts`       | Prisma client (unused, kept for compatibility) |
 
 ## KEY EXPORTS
 
@@ -31,6 +32,7 @@ Core backend utilities: authentication, AI chatbot, database connections, storag
 ## DATABASE
 
 Direct pg pool to PostgreSQL. Tables created by `init-db.ts`:
+
 - `users` — id, email, password, name, role (USER/ADMIN)
 - `pengajuan` — id, user_id, status (PENDING/REVISION/APPROVED/REJECTED)
 - `makam` — id, pengajuan_id, blok, nomor, deceased_name, status (AVAILABLE/RESERVED/OCCUPIED)

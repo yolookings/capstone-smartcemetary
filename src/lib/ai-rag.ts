@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "./supabase";
 
 const KNOWLEDGE_BASE = `
-Smart Cemetery (The Living Memory) adalah sistem manajemen pemakaman digital modern.
+Smart Cemetery adalah sistem manajemen pemakaman digital modern.
 Persyaratan Pendaftaran:
 1. Scan KTP Pemohon Asli.
 2. Scan Kartu Keluarga Asli.
@@ -21,37 +21,40 @@ Layanan Pemakaman: 24 Jam dengan koordinasi petugas.
 
 export async function askAI(message: string, userId?: string) {
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+          messages: [
+            {
+              role: "system",
+              content: `Anda adalah asisten AI untuk Smart Cemetery. Gunakan konteks berikut untuk menjawab pertanyaan pengguna secara ramah dan profesional dalam Bahasa Indonesia: \n${KNOWLEDGE_BASE}`,
+            },
+            { role: "user", content: message },
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model: "qwen/qwen-2.5-coder-32b-instruct",
-        messages: [
-          {
-            role: "system",
-            content: `Anda adalah asisten AI untuk Smart Cemetery. Gunakan konteks berikut untuk menjawab pertanyaan pengguna secara ramah dan profesional dalam Bahasa Indonesia: \n${KNOWLEDGE_BASE}`
-          },
-          { role: "user", content: message }
-        ],
-      }),
-    });
+    );
 
     const data = await response.json();
-    const aiResponse = data.choices[0]?.message?.content || "Maaf, saya sedang tidak dapat merespon saat ini.";
+    const aiResponse =
+      data.choices[0]?.message?.content ||
+      "Maaf, saya sedang tidak dapat merespon saat ini.";
 
     // Save to ChatLog using Supabase SDK (more robust)
-    await supabaseAdmin
-      .from('chat_logs')
-      .insert([
-        { 
-          user_id: userId || null, 
-          message: message, 
-          response: aiResponse 
-        }
-      ]);
+    await supabaseAdmin.from("chat_logs").insert([
+      {
+        user_id: userId || null,
+        message: message,
+        response: aiResponse,
+      },
+    ]);
 
     return aiResponse;
   } catch (error) {

@@ -18,7 +18,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Smart Cemetery - The Living Memory",
+  title: "Smart Cemetery - Aplikasi Pemakaman Digital",
   description: "Sistem Manajemen Pemakaman Digital Modern",
 };
 
