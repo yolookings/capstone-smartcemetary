@@ -1,53 +1,86 @@
+import { promises as fs } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { supabaseAdmin } from "./supabase";
 
-const KNOWLEDGE_BASE = `
-Smart Cemetery adalah sistem manajemen pemakaman digital modern.
-Persyaratan Pendaftaran:
-1. Scan KTP Pemohon Asli.
-2. Scan Kartu Keluarga Asli.
-3. Surat Keterangan Kematian.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CHUNKS_FILE = path.join(__dirname, "../../rag_chunks.json");
 
-Prosedur:
-1. Registrasi akun.
-2. Isi formulir data almarhum dan pemohon.
-3. Unggah dokumen.
-4. Tunggu verifikasi admin.
-5. Jika disetujui, lokasi makam akan ditentukan dan muncul di dashboard.
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL_NAME = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
 
-Biaya: Diatur oleh Perda setempat, bervariasi tergantung blok (A, B, C, D).
-Jam Operasional Kantor: Senin-Jumat 08.00-16.00 WIB.
-Layanan Pemakaman: 24 Jam dengan koordinasi petugas.
-`;
+let cachedChunks: string[] = [];
+
+async function loadChunks() {
+  if (cachedChunks.length === 0) {
+    try {
+      const content = await fs.readFile(CHUNKS_FILE, "utf-8");
+      cachedChunks = JSON.parse(content);
+      console.log(`Loaded ${cachedChunks.length} RAG chunks from PDF`);
+    } catch (error) {
+      console.error("Failed to load chunks:", error);
+      cachedChunks = [];
+    }
+  }
+  return cachedChunks;
+}
+
+function simpleSearch(
+  query: string,
+  chunks: string[],
+  topK: number = 3,
+): string[] {
+  const queryWords = query.toLowerCase().split(/\s+/);
+  const scores: number[] = chunks.map((chunk) => {
+    const chunkLower = chunk.toLowerCase();
+    return queryWords.reduce((score, word) => {
+      if (chunkLower.includes(word)) score += 1;
+      return score;
+    }, 0);
+  });
+
+  const indexed = chunks.map((c, i) => ({ chunk: c, score: scores[i] }));
+  indexed.sort((a, b) => b.score - a.score);
+
+  return indexed.slice(0, topK).map((x) => x.chunk);
+}
 
 export async function askAI(message: string, userId?: string) {
+  const chunks = await loadChunks();
+
+  const relevantChunks = simpleSearch(message, chunks, 3);
+  const context = relevantChunks.join("\n\n---\n\n");
+
+  const systemPrompt = `Anda adalah asisten AI untuk Smart Cemetery yang bergerak di bidang manajemen pemakaman dan TPU (Taman Pemakaman Umum) di Indonesia.
+Jawab pertanyaan dengan ramah, profesional, dan dalam Bahasa Indonesia.
+Gunakan konteks dari peraturan Perda yang diberikan untuk menjawab. Jangan buat informasi yang tidak ada di konteks.
+
+[REFERENSI PERDA]:
+${context}`;
+
   try {
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-          messages: [
-            {
-              role: "system",
-              content: `Anda adalah asisten AI untuk Smart Cemetery. Gunakan konteks berikut untuk menjawab pertanyaan pengguna secara ramah dan profesional dalam Bahasa Indonesia: \n${KNOWLEDGE_BASE}`,
-            },
-            { role: "user", content: message },
-          ],
-        }),
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: MODEL_NAME,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: message },
+        ],
+        temperature: 0.3,
+        max_tokens: 1024,
+      }),
+    });
 
     const data = await response.json();
     const aiResponse =
-      data.choices[0]?.message?.content ||
-      "Maaf, saya sedang tidak dapat merespon saat ini.";
+      data.choices?.[0]?.message?.content ||
+      "Maaf, saya terlalu lama merespon. Cobain lagi.";
 
-    // Save to ChatLog using Supabase SDK (more robust)
     await supabaseAdmin.from("chat_logs").insert([
       {
         user_id: userId || null,
@@ -58,7 +91,7 @@ export async function askAI(message: string, userId?: string) {
 
     return aiResponse;
   } catch (error) {
-    console.error("OpenRouter AI Error:", error);
-    return "Maaf, terjadi gangguan pada sistem AI. Silakan hubungi admin secara manual.";
+    console.error("RAG AI Error:", error);
+    return "Maaf, terjadi gangguan pada sistem AI.";
   }
 }
