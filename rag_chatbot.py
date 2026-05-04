@@ -142,6 +142,7 @@ PROSEDUR PENDAFTARAN:
 
 BIAYA MAKAM:
 - Diatur oleh Perda setempat
+- Untuk Beberapa TPU yang di bawah pemerintah daerah, biaya makam bisa diatur oleh pemerintah daerah tersebut bahkan gratis.
 - Bervariasi tergantung blok (A, B, C, D)
 - Blok premium biasanya lebih mahal
 
