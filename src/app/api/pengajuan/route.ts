@@ -62,8 +62,9 @@ export async function POST(req: Request) {
     const ktp = formData.get("ktp") as File;
     const kk = formData.get("kk") as File;
     const suratKematian = formData.get("suratKematian") as File;
+    const suratRtRw = formData.get("suratRtRw") as File;
 
-    if (!nik || !deceasedDate || !ktp || !suratKematian) {
+    if (!nik || !deceasedDate || !ktp || !suratKematian || !suratRtRw) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
     }
 
@@ -80,7 +81,8 @@ export async function POST(req: Request) {
     const files = [
       { file: ktp, type: "KTP" },
       { file: kk, type: "KK" },
-      { file: suratKematian, type: "SURAT_KEMATIAN" }
+      { file: suratKematian, type: "SURAT_KEMATIAN" },
+      { file: suratRtRw, type: "SURAT_RT_RW" }
     ];
 
     for (const f of files) {

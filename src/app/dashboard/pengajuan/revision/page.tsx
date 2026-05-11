@@ -14,6 +14,7 @@ export default function RevisionPage() {
   const [ktp, setKtp] = useState<File | null>(null);
   const [kk, setKk] = useState<File | null>(null);
   const [suratKematian, setSuratKematian] = useState<File | null>(null);
+  const [suratRtRw, setSuratRtRw] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -61,6 +62,7 @@ export default function RevisionPage() {
       if (ktp) formData.append("ktp", ktp);
       if (kk) formData.append("kk", kk);
       if (suratKematian) formData.append("suratKematian", suratKematian);
+      if (suratRtRw) formData.append("suratRtRw", suratRtRw);
 
       const res = await fetch("/api/pengajuan/revision", {
         method: "POST",
@@ -196,6 +198,27 @@ export default function RevisionPage() {
                 <Upload className="mx-auto text-slate-400 mb-2" />
                 <p className="text-sm text-slate-600">
                   {suratKematian ? suratKematian.name : "Klik untuk upload surat kematian"}
+                </p>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Surat RT/RW <span className="text-rose-500">*</span>
+            </label>
+            <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-slate-400 transition-colors">
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => setSuratRtRw(e.target.files?.[0] || null)}
+                className="hidden"
+                id="srt-upload"
+              />
+              <label htmlFor="srt-upload" className="cursor-pointer">
+                <Upload className="mx-auto text-slate-400 mb-2" />
+                <p className="text-sm text-slate-600">
+                  {suratRtRw ? suratRtRw.name : "Klik untuk upload surat RT/RW"}
                 </p>
               </label>
             </div>

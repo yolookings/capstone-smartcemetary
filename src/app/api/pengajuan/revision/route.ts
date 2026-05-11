@@ -90,13 +90,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = user.id;
+const userId = user.id;
     const formData = await req.formData();
     const pengajuanId = formData.get("pengajuanId") as string;
     
     const ktp = formData.get("ktp") as File;
     const kk = formData.get("kk") as File;
     const suratKematian = formData.get("suratKematian") as File;
+    const suratRtRw = formData.get("suratRtRw") as File;
 
     if (!pengajuanId) {
       return NextResponse.json({ error: "ID pengajuan wajib diisi" }, { status: 400 });
@@ -117,10 +118,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Pengajuan tidak ditemukan" }, { status: 404 });
     }
 
-    if (existing[0].status !== 'NEED_REVISION') {
-      return NextResponse.json({ error: "Pengajuan tidak membutuhkan revisi" }, { status: 400 });
-    }
-
     const makam = existing[0].makam;
 
     await dbDelete('dokumen', pengajuanId);
@@ -128,7 +125,8 @@ export async function POST(req: Request) {
     const files = [
       { file: ktp, type: "KTP" },
       { file: kk, type: "KK" },
-      { file: suratKematian, type: "SURAT_KEMATIAN" }
+      { file: suratKematian, type: "SURAT_KEMATIAN" },
+      { file: suratRtRw, type: "SURAT_RT_RW" }
     ];
 
     let hasUpload = false;
