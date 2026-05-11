@@ -56,11 +56,15 @@ export default function ChatWidget() {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-50 group"
+        className="fixed bottom-4 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-2xl transition-all hover:scale-110 sm:bottom-8 sm:right-8 sm:h-16 sm:w-16 z-50 group cursor-pointer"
       >
-        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
+        {isOpen ? (
+          <X size={20} className="sm:h-6 sm:w-6" />
+        ) : (
+          <MessageSquare size={20} className="sm:h-6 sm:w-6" />
+        )}
         {!isOpen && (
-          <span className="absolute right-20 bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-xl border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          <span className="absolute right-16 bg-white px-3 py-2 text-[10px] font-bold text-slate-900 shadow-xl border border-slate-100 opacity-0 transition-opacity whitespace-nowrap group-hover:opacity-100 sm:right-20 sm:px-4 sm:text-xs">
             Tanya AI Assistant
           </span>
         )}
@@ -68,15 +72,17 @@ export default function ChatWidget() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-28 right-8 w-[400px] h-[600px] bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed bottom-20 right-4 flex h-105 w-[calc(100vw-2rem)] max-w-85 flex-col overflow-hidden rounded-[1.75rem] border border-slate-100 bg-white shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 sm:bottom-28 sm:right-8 sm:h-150 sm:w-100 sm:max-w-none sm:rounded-[2.5rem]">
           {/* Header */}
-          <div className="p-6 bg-primary text-white flex items-center gap-4">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-              <Bot size={28} />
+          <div className="flex items-center gap-3 bg-primary p-4 text-white sm:gap-4 sm:p-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 sm:h-12 sm:w-12">
+              <Bot size={22} className="sm:h-7 sm:w-7" />
             </div>
             <div>
-              <h2 className="font-bold text-lg leading-none">AI Assistant</h2>
-              <p className="text-[10px] font-bold text-primary-light uppercase tracking-widest mt-1">
+              <h2 className="text-base font-bold leading-none sm:text-lg">
+                AI Assistant
+              </h2>
+              <p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-primary-light sm:text-[10px]">
                 Smart Cemetery RAG Agent
               </p>
             </div>
@@ -85,7 +91,7 @@ export default function ChatWidget() {
           {/* Messages */}
           <div
             ref={scrollRef}
-            className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral/30"
+            className="flex-1 space-y-4 overflow-y-auto bg-neutral/30 p-4 sm:space-y-6 sm:p-6"
           >
             {messages.map((m, i) => (
               <div
@@ -128,25 +134,25 @@ export default function ChatWidget() {
           </div>
 
           {/* Input */}
-          <div className="p-6 bg-white border-t border-slate-100">
-            <div className="flex gap-2 p-1 bg-neutral rounded-2xl border border-slate-100 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+          <div className="border-t border-slate-100 bg-white p-4 sm:p-6">
+            <div className="flex gap-2 rounded-2xl border border-slate-100 bg-neutral p-1 transition-all focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Tanyakan sesuatu..."
-                className="flex-1 px-4 py-2.5 bg-transparent outline-none text-sm text-slate-800"
+                className="flex-1 bg-transparent px-3 py-2 text-sm text-slate-800 outline-none sm:px-4 sm:py-2.5"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || loading}
-                className="p-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-all disabled:opacity-50"
+                className="rounded-xl bg-primary p-2 text-white transition-all hover:bg-primary-dark disabled:opacity-50 sm:p-2.5 cursor-pointer"
               >
-                <Send size={18} />
+                <Send size={16} className="sm:h-4.5 sm:w-4.5" />
               </button>
             </div>
-            <p className="text-[9px] text-slate-400 text-center mt-4 font-bold uppercase tracking-tighter">
+            <p className="mt-3 text-center text-[8px] font-bold uppercase tracking-tighter text-slate-400 sm:mt-4 sm:text-[9px]">
               Ditenagai oleh Model Nvidia AI & Smart Cemetery Data
             </p>
           </div>
