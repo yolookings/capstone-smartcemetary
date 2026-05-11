@@ -24,13 +24,16 @@ interface ClientTabsProps {
   isAdmin: boolean;
   userId: string | null;
   graveMap: Record<string, GravePlot>;
+  isLoggedIn: boolean;
 }
 
-export function ClientTabs({ defaultTab, isAdmin, userId, graveMap }: ClientTabsProps) {
+export function ClientTabs({ defaultTab, isAdmin, userId, graveMap, isLoggedIn }: ClientTabsProps) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [hoveredPlot, setHoveredPlot] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState<GravePlot | null>(null);
+
+  const showBlur = !isLoggedIn;
 
   const handlePlotClick = (blok: string, nomor: number) => {
     const key = `${blok}${nomor}`;
@@ -71,44 +74,65 @@ export function ClientTabs({ defaultTab, isAdmin, userId, graveMap }: ClientTabs
         </div>
 
         <div className="p-4">
-          <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
-            {Array.from({ length: 19 }, (_, i) => i + 1).map((num) => {
-              const key = `${activeTab}${num}`;
-              const grave = graveMap[key];
-              const status = grave?.status || "AVAILABLE";
-              const bgColor = STATUS_COLORS[status as keyof typeof STATUS_COLORS]?.bg || STATUS_COLORS.AVAILABLE.bg;
-              const showDetails = isAdmin && grave && (status === "OCCUPIED" || status === "RESERVED");
-              const canViewPrivate = isAdmin || (userId && grave?.user_id === userId);
-
-              return (
-                <div
-                  key={key}
-                  onClick={() => handlePlotClick(activeTab, num)}
-                  onMouseEnter={() => handlePlotHover(activeTab, num)}
-                  onMouseLeave={() => setHoveredPlot(null)}
-                  className={`relative aspect-square rounded-lg border-b-2 cursor-pointer transition-all ${
-                    showDetails ? "hover:scale-110 hover:shadow-md hover:z-10" : ""
-                  } flex items-center justify-center text-[10px] md:text-xs font-bold`}
-                  style={{ backgroundColor: bgColor, borderColor: bgColor, color: "#1a1a1a" }}
-                >
-                  <span>{activeTab}{num}</span>
-                  
-                  {!canViewPrivate && status === "OCCUPIED" && (
-                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                      <span className="text-[8px] text-slate-500">Privat</span>
-                    </div>
-                  )}
-                  
-                  {showDetails && isAdmin && hoveredPlot === key && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] px-3 py-2 rounded-lg whitespace-nowrap z-20">
-                      <div className="font-bold">{grave.deceased_name || "N/A"}</div>
-                      <div className="opacity-70">{grave.applicant_name || "N/A"}</div>
-                    </div>
-                  )}
+          {showBlur ? (
+            <div className="relative">
+              <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2 filter blur-md opacity-50 pointer-events-none">
+                {Array.from({ length: 19 }, (_, i) => i + 1).map((num) => (
+                  <div key={`${activeTab}${num}`} className="aspect-square rounded-lg bg-slate-300" />
+                ))}
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-white/90 backdrop-blur-sm px-6 py-4 rounded-2xl shadow-lg text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-1">Login Diperlukan</h3>
+                  <p className="text-sm text-slate-600 mb-3">Silakan login untuk melihat peta lengkap</p>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              {Array.from({ length: 19 }, (_, i) => i + 1).map((num) => {
+                const key = `${activeTab}${num}`;
+                const grave = graveMap[key];
+                const status = grave?.status || "AVAILABLE";
+                const bgColor = STATUS_COLORS[status as keyof typeof STATUS_COLORS]?.bg || STATUS_COLORS.AVAILABLE.bg;
+                const showDetails = isAdmin && grave && (status === "OCCUPIED" || status === "RESERVED");
+                const canViewPrivate = isAdmin || (userId && grave?.user_id === userId);
+
+                return (
+                  <div
+                    key={key}
+                    onClick={() => handlePlotClick(activeTab, num)}
+                    onMouseEnter={() => handlePlotHover(activeTab, num)}
+                    onMouseLeave={() => setHoveredPlot(null)}
+                    className={`relative aspect-square rounded-lg border-b-2 cursor-pointer transition-all ${
+                      showDetails ? "hover:scale-110 hover:shadow-md hover:z-10" : ""
+                    } flex items-center justify-center text-[10px] md:text-xs font-bold`}
+                    style={{ backgroundColor: bgColor, borderColor: bgColor, color: "#1a1a1a" }}
+                  >
+                    <span>{activeTab}{num}</span>
+                    
+                    {!canViewPrivate && status === "OCCUPIED" && (
+                      <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                        <span className="text-[8px] text-slate-500">Privat</span>
+                      </div>
+                    )}
+                    
+                    {showDetails && isAdmin && hoveredPlot === key && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] px-3 py-2 rounded-lg whitespace-nowrap z-20">
+                        <div className="font-bold">{grave.deceased_name || "N/A"}</div>
+                        <div className="opacity-70">{grave.applicant_name || "N/A"}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

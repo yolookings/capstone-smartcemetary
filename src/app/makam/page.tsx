@@ -122,11 +122,12 @@ export default async function MakamPage() {
           </div>
         </div>
 
-        <ClientTabs
-          defaultTab="A"
-          isAdmin={isAdmin}
-          userId={userId}
+        <ClientTabs 
+          defaultTab="A" 
+          isAdmin={isAdmin} 
+          userId={userId} 
           graveMap={graveMapRecord as Record<string, GravePlot>}
+          isLoggedIn={!!user}
         />
 
         <div className="text-center py-4">
