@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { uploadFile } from "@/lib/storage";
+import { getAdminWhatsAppNumber, notifyAdminNewSubmission } from "@/lib/whatsapp";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -109,6 +110,15 @@ export async function POST(req: Request) {
       blok: 'TBA',
       nomor: 'TBA',
     });
+
+    const adminWa = getAdminWhatsAppNumber();
+    if (adminWa) {
+      notifyAdminNewSubmission({
+        adminPhone: adminWa,
+        applicantName,
+        deceasedName: formData.get("deceasedName") as string || "N/A"
+      }).catch(err => console.error("[WAPP] Notification failed:", err));
+    }
 
     return NextResponse.json({ message: "Pengajuan berhasil dikirim", id: pengajuanId });
   } catch (error: any) {

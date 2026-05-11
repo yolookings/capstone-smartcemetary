@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-auth";
+import { normalizePhone, isValidPhone } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
+    const { email, password, name, whatsappNumber } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 });
+    }
+
+    if (whatsappNumber && !isValidPhone(whatsappNumber)) {
+      return NextResponse.json({ error: "Nomor WhatsApp tidak valid. Gunakan format 628123456789" }, { status: 400 });
     }
 
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
@@ -22,6 +27,14 @@ export async function POST(req: Request) {
     if (error) {
       console.error("Supabase Auth Error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (whatsappNumber) {
+      const normalizedWa = normalizePhone(whatsappNumber);
+      await supabaseAdmin
+        .from('profiles')
+        .update({ whatsapp_number: normalizedWa })
+        .eq('id', data.user.id);
     }
 
     return NextResponse.json({ 

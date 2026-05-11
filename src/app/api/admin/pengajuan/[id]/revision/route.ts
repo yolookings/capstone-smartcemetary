@@ -27,7 +27,7 @@ async function dbUpdate(table: string, id: string, data: Record<string, any>) {
   return res.json();
 }
 
-export async function PATCH(
+export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -53,7 +53,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check admin role
     const profileRes = await fetch(
       `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=role`,
       {
@@ -69,13 +68,18 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { status, notes, blok, nomor } = await req.json();
+    const { revisionNote } = await req.json();
 
-    const updated = await dbUpdate('pengajuan', id, { status, notes });
-
-    if (status === "APPROVED") {
-      await dbUpdate('makam', id, { status: 'OCCUPIED', blok: blok || 'TBA', nomor: nomor || 'TBA' });
+    if (!revisionNote || revisionNote.trim().length === 0) {
+      return NextResponse.json({ error: "Catatan revisian wajib diisi" }, { status: 400 });
     }
+
+    const updateData = {
+      status: 'NEED_REVISION',
+      revision_note: revisionNote,
+    };
+
+    const updated = await dbUpdate('pengajuan', id, updateData);
 
     const pengajuanRes = await fetch(
       `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${id}&select=*,profiles(whatsapp_number,full_name),makam(*)`,
@@ -88,45 +92,22 @@ export async function PATCH(
     );
     const pengajuanData = await pengajuanRes.json();
     const profile = pengajuanData[0]?.profiles;
-    const makam = pengajuanData[0]?.makam;
 
-    if (profile?.whatsapp_number && (status === "APPROVED" || status === "REJECTED" || status === "NEED_REVISION")) {
+    if (profile?.whatsapp_number) {
       notifyUserStatusChange({
         userPhone: profile.whatsapp_number,
-        status,
-        blok: makam?.blok,
-        nomor: makam?.nomor,
-        revisionNote: notes
+        status: "NEED_REVISION",
+        revisionNote: revisionNote
       }).catch(console.error);
     }
 
-    return NextResponse.json(updated[0]);
+    return NextResponse.json({ 
+      message: "Revisi diminta", 
+      id,
+      status: 'NEED_REVISION' 
+    });
   } catch (error) {
-    console.error("Admin update error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${id}&select=*,profiles(email,full_name),makam(*),dokumen(*)`,
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-        },
-      }
-    );
-
-    const data = await res.json();
-    return NextResponse.json(data[0] || null);
-  } catch (error) {
+    console.error("Request revision error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

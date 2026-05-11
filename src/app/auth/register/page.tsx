@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -40,7 +41,8 @@ export default function RegisterPage() {
           id: data.user.id,
           email: email,
           full_name: name,
-          role: 'USER'
+          role: 'USER',
+          whatsapp_number: whatsappNumber ? `62${whatsappNumber.slice(1)}` : null
         });
         
         router.push("/auth/login?registered=true");
@@ -104,6 +106,19 @@ export default function RegisterPage() {
                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
                 placeholder="••••••••"
               />
+            </div>
+            <div>
+              <label htmlFor="whatsapp" className="block text-sm font-medium text-slate-700">Nomor WhatsApp</label>
+              <input
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                placeholder="08123456789"
+              />
+              <p className="mt-1 text-xs text-slate-500">Untuk notifikasi status pengajuan</p>
             </div>
           </div>
 
