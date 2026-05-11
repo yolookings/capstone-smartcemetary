@@ -1,4 +1,5 @@
 const FONNTE_API_URL = "https://api.fonnte.com/send";
+const DASHBOARD_URL = "https://capstone-smartcemetary-git-feature-notification-mwlanaz.vercel.app";
 
 export function normalizePhone(phone: string): string {
   if (!phone) return "";
@@ -33,6 +34,7 @@ export async function sendWhatsAppMessage(
   const token = process.env.FONNTE_TOKEN;
   
   if (!token) {
+    console.error("[WA] FONNTE_TOKEN not configured");
     return { success: false, error: "FONNTE_TOKEN not configured" };
   }
   
@@ -43,6 +45,7 @@ export async function sendWhatsAppMessage(
   const normalizedTarget = normalizePhone(target);
   
   if (!isValidPhone(normalizedTarget)) {
+    console.error("[WA] Invalid phone:", target);
     return { success: false, error: `Invalid phone number: ${target}` };
   }
   
@@ -75,13 +78,15 @@ export async function sendWhatsAppMessage(
     
     const result = await response.json();
     
+    console.log("[WA] Send result:", { target: normalizedTarget, status: result.status, id: result.id });
+    
     if (response.ok && result.status === true) {
       return { success: true, response: result };
     }
     
     return { success: false, error: result.message || "Failed", response: result };
   } catch (error) {
-    console.error("[FONNTE ERROR]", error);
+    console.error("[WA] Error:", error);
     return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
@@ -110,44 +115,77 @@ Status        : Menunggu Verifikasi
 Silakan login ke dashboard E-Makam untuk memverifikasi ulang.`;
 }
 
-export function buildApprovedMessage(data: { blok?: string; nomor?: string }): string {
+export function buildApprovedMessage(data: {
+  pengajuanId?: string;
+  blok?: string;
+  nomor?: string;
+}): string {
   return `[E-Makam]
+Pengajuan makam Anda telah DITERIMA.
 
-Pendaftaran makam telah DISETUJUI.
+ID: #${(data.pengajuanId || "N/A").slice(0, 8)}
+Blok: ${data.blok || "-"}
+Nomor: ${data.nomor || "-"}
 
-Lokasi Makam:
-Blok ${data.blok || "-"} - Nomor ${data.nomor || "-"}
-
-Silakan login ke sistem untuk detail lengkap.`;
+Buka Dashboard: ${DASHBOARD_URL}`;
 }
 
-export function buildRevisionNeededMessage(data: { revisionNote: string }): string {
+export function buildRevisionNeededMessage(data: {
+  pengajuanId?: string;
+  revisionNote?: string;
+}): string {
   return `[E-Makam]
+Pengajuan memerlukan revisi.
 
-Pengajuan memerlukan revisi dokumen.
+ID: #${(data.pengajuanId || "N/A").slice(0, 8)}
+Catatan: ${data.revisionNote || "-"}
 
-Catatan Admin:
-"${data.revisionNote}"
-
-Silakan login ke website E-Makam untuk melengkapi revisi.`;
+Silakan login untuk revisi.
+atau buka: ${DASHBOARD_URL}/dashboard/pengajuan/revision`;
 }
 
-export function buildRejectedMessage(): string {
+export function buildRejectedMessage(data: { pengajuanId?: string }): string {
   return `[E-Makam]
-
 Pengajuan telah DITOLAK.
 
-Silakan login ke dashboard E-Makam untuk melihat penjelasan.`;
+ID: #${(data.pengajuanId || "N/A").slice(0, 8)}
+
+Silakan login ke dashboard E-Makam untuk melihat informasi.`;
 }
 
-export async function notifyAdminNewSubmission(data: { adminPhone: string; applicantName: string; deceasedName: string }) {
+export function buildSubmissionConfirmation(data: {
+  pengajuanId: string;
+  applicantName: string;
+  nik: string;
+}): string {
+  return `[E-Makam]
+Pengajuan berhasil dikirim!
+
+ID: #${data.pengajuanId.slice(0, 8)}
+Nama: ${data.applicantName}
+NIK: ${data.nik}
+
+Status: Menunggu Verifikasi
+
+Cek status: ${DASHBOARD_URL}/dashboard/pengajuan`;
+}
+
+export async function notifyAdminNewSubmission(data: {
+  adminPhone: string;
+  applicantName: string;
+  deceasedName: string;
+}) {
   return sendWhatsAppMessage(
     data.adminPhone,
     buildNewSubmissionMessage({ applicantName: data.applicantName, deceasedName: data.deceasedName })
   );
 }
 
-export async function notifyAdminRevisionResubmission(data: { adminPhone: string; applicantName: string; deceasedName: string }) {
+export async function notifyAdminRevisionResubmission(data: {
+  adminPhone: string;
+  applicantName: string;
+  deceasedName: string;
+}) {
   return sendWhatsAppMessage(
     data.adminPhone,
     buildRevisionResubmissionMessage({ applicantName: data.applicantName, deceasedName: data.deceasedName })
@@ -157,18 +195,37 @@ export async function notifyAdminRevisionResubmission(data: { adminPhone: string
 export async function notifyUserStatusChange(data: {
   userPhone: string;
   status: "APPROVED" | "REJECTED" | "NEED_REVISION";
+  pengajuanId?: string;
   blok?: string;
   nomor?: string;
   revisionNote?: string;
 }) {
+  console.log("[WA] notifyUserStatusChange called:", data);
   switch (data.status) {
     case "APPROVED":
-      return sendWhatsAppMessage(data.userPhone, buildApprovedMessage({ blok: data.blok, nomor: data.nomor }));
+      return sendWhatsAppMessage(data.userPhone, buildApprovedMessage({ pengajuanId: data.pengajuanId, blok: data.blok, nomor: data.nomor }));
     case "NEED_REVISION":
-      return sendWhatsAppMessage(data.userPhone, buildRevisionNeededMessage({ revisionNote: data.revisionNote || "" }));
+      return sendWhatsAppMessage(data.userPhone, buildRevisionNeededMessage({ pengajuanId: data.pengajuanId, revisionNote: data.revisionNote }));
     case "REJECTED":
-      return sendWhatsAppMessage(data.userPhone, buildRejectedMessage());
+      return sendWhatsAppMessage(data.userPhone, buildRejectedMessage({ pengajuanId: data.pengajuanId }));
   }
+}
+
+export async function notifyUserSubmissionConfirmation(data: {
+  userPhone: string;
+  pengajuanId: string;
+  applicantName: string;
+  nik: string;
+}) {
+  console.log("[WA] notifyUserSubmissionConfirmation called:", data);
+  return sendWhatsAppMessage(
+    data.userPhone,
+    buildSubmissionConfirmation({
+      pengajuanId: data.pengajuanId,
+      applicantName: data.applicantName,
+      nik: data.nik
+    })
+  );
 }
 
 export function getAdminWhatsAppNumber(): string | undefined {

@@ -82,7 +82,7 @@ export async function POST(
     const updated = await dbUpdate('pengajuan', id, updateData);
 
     const pengajuanRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${id}&select=*,profiles(whatsapp_number,full_name),makam(*)`,
+      `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${id}&select=*,profiles(phone,whatsapp_number,full_name),makam(*)`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -92,11 +92,13 @@ export async function POST(
     );
     const pengajuanData = await pengajuanRes.json();
     const profile = pengajuanData[0]?.profiles;
+    const userPhone = profile?.phone || profile?.whatsapp_number;
 
-    if (profile?.whatsapp_number) {
+    if (userPhone) {
       notifyUserStatusChange({
-        userPhone: profile.whatsapp_number,
+        userPhone: userPhone,
         status: "NEED_REVISION",
+        pengajuanId: id,
         revisionNote: revisionNote
       }).catch(console.error);
     }

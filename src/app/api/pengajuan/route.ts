@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { uploadFile } from "@/lib/storage";
-import { getAdminWhatsAppNumber, notifyAdminNewSubmission } from "@/lib/whatsapp";
+import { getAdminTelegramIds, notifyAdminsNewSubmission } from "@/lib/telegram";
+import { notifyUserSubmissionConfirmation } from "@/lib/whatsapp";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -78,6 +79,13 @@ export async function POST(req: Request) {
       throw new Error('Failed to create pengajuan');
     }
 
+    const profileRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=phone`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const profiles = await profileRes.json();
+    const profile = profiles[0];
+
     const files = [
       { file: ktp, type: "KTP" },
       { file: kk, type: "KK" },
@@ -113,13 +121,21 @@ export async function POST(req: Request) {
       nomor: 'TBA',
     });
 
-    const adminWa = getAdminWhatsAppNumber();
-    if (adminWa) {
-      notifyAdminNewSubmission({
-        adminPhone: adminWa,
+    await notifyAdminsNewSubmission({
+      pengajuanId,
+      applicantName,
+      nik,
+      relationship
+    }).catch(err => console.error("[TELEGRAM] Notification failed:", err));
+
+    const userPhone = profile?.phone;
+    if (userPhone) {
+      notifyUserSubmissionConfirmation({
+        userPhone,
+        pengajuanId,
         applicantName,
-        deceasedName: formData.get("deceasedName") as string || "N/A"
-      }).catch(err => console.error("[WAPP] Notification failed:", err));
+        nik
+      }).catch(err => console.error("[WA] Submit confirm failed:", err));
     }
 
     return NextResponse.json({ message: "Pengajuan berhasil dikirim", id: pengajuanId });

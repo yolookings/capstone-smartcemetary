@@ -9,7 +9,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -26,8 +26,8 @@ export default function RegisterPage() {
         options: {
           data: {
             full_name: name,
-          }
-        }
+          },
+        },
       });
 
       if (signUpError) {
@@ -37,14 +37,16 @@ export default function RegisterPage() {
       }
 
       if (data.user) {
-        await supabase.from('profiles').insert({
+        const normalizedPhone = phoneNumber.replace(/^0/, "62");
+        await supabase.from("profiles").insert({
           id: data.user.id,
           email: email,
           full_name: name,
-          role: 'USER',
-          whatsapp_number: whatsappNumber ? `62${whatsappNumber.slice(1)}` : null
+          role: "USER",
+          phone: normalizedPhone || null,
+          whatsapp_number: normalizedPhone || null,
         });
-        
+
         router.push("/auth/login?registered=true");
       } else {
         setError("Registration failed. Please try again.");
@@ -60,16 +62,29 @@ export default function RegisterPage() {
     <div className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4">
       <div className="w-full max-w-md space-y-8 bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Daftar Akun</h2>
-          <p className="mt-2 text-sm text-slate-600">Buat akun untuk mulai pendaftaran makam</p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+            Daftar Akun
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Buat akun untuk mulai pendaftaran makam
+          </p>
         </div>
-        
-        {error && <div className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">{error}</div>}
-        
+
+        {error && (
+          <div className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">
+            {error}
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700">Nama Lengkap</label>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Nama Lengkap
+              </label>
               <input
                 id="name"
                 name="name"
@@ -82,7 +97,12 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email</label>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Email
+              </label>
               <input
                 id="email"
                 name="email"
@@ -95,7 +115,12 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700">Password</label>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Password
+              </label>
               <input
                 id="password"
                 name="password"
@@ -108,17 +133,24 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label htmlFor="whatsapp" className="block text-sm font-medium text-slate-700">Nomor WhatsApp</label>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Nomor HP (untuk Telegram)
+              </label>
               <input
-                id="whatsapp"
-                name="whatsapp"
+                id="phone"
+                name="phone"
                 type="tel"
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
-                placeholder="08123456789"
+                placeholder="082134170234"
               />
-              <p className="mt-1 text-xs text-slate-500">Untuk notifikasi status pengajuan</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Masukkan nomor HP yang terhubung dengan Whatsapp Anda.
+              </p>
             </div>
           </div>
 
@@ -134,7 +166,10 @@ export default function RegisterPage() {
         </form>
         <p className="text-center text-sm text-slate-600 mt-6">
           Sudah punya akun?{" "}
-          <Link href="/auth/login" className="font-medium text-emerald-600 hover:text-emerald-500">
+          <Link
+            href="/auth/login"
+            className="font-medium text-emerald-600 hover:text-emerald-500"
+          >
             Login di sini
           </Link>
         </p>

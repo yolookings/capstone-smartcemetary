@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { uploadFile } from "@/lib/storage";
-import { getAdminWhatsAppNumber, notifyAdminRevisionResubmission } from "@/lib/whatsapp";
+import { getAdminTelegramIds, notifyAdminsRevisionResubmission } from "@/lib/telegram";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -155,14 +155,12 @@ const userId = user.id;
       revision_note: null,
     });
 
-    const adminWa = getAdminWhatsAppNumber();
-    if (adminWa && makam) {
-      notifyAdminRevisionResubmission({
-        adminPhone: adminWa,
-        applicantName: makam.applicant_name || "N/A",
-        deceasedName: makam.deceased_name || "N/A"
-      }).catch(err => console.error("[WAPP] Notification failed:", err));
-    }
+    await notifyAdminsRevisionResubmission({
+      pengajuanId,
+      applicantName: makam?.applicant_name || "N/A",
+      nik: makam?.nik || "N/A",
+      relationship: makam?.relationship || "N/A"
+    }).catch(err => console.error("[TELEGRAM] Notification failed:", err));
 
     return NextResponse.json({ message: "Dokumen revisi berhasil dikirim", id: pengajuanId });
   } catch (error: any) {

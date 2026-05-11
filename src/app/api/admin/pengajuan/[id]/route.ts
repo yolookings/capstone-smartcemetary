@@ -78,7 +78,7 @@ export async function PATCH(
     }
 
     const pengajuanRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${id}&select=*,profiles(whatsapp_number,full_name),makam(*)`,
+      `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${id}&select=*,profiles(phone,whatsapp_number,full_name),makam(*)`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -89,15 +89,20 @@ export async function PATCH(
     const pengajuanData = await pengajuanRes.json();
     const profile = pengajuanData[0]?.profiles;
     const makam = pengajuanData[0]?.makam;
+    const userPhone = profile?.phone || profile?.whatsapp_number;
 
-    if (profile?.whatsapp_number && (status === "APPROVED" || status === "REJECTED" || status === "NEED_REVISION")) {
+    if (userPhone) {
+      console.log("[ADMIN] Sending WhatsApp to:", userPhone, "status:", status);
       notifyUserStatusChange({
-        userPhone: profile.whatsapp_number,
+        userPhone: userPhone,
         status,
+        pengajuanId: id,
         blok: makam?.blok,
         nomor: makam?.nomor,
         revisionNote: notes
-      }).catch(console.error);
+      }).catch(e => console.error("[WA ERROR]", e));
+    } else {
+      console.log("[ADMIN] No phone found for user");
     }
 
     return NextResponse.json(updated[0]);
