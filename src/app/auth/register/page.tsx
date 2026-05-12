@@ -121,16 +121,33 @@ export default function RegisterPage() {
               >
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
-                placeholder="••••••••"
-              />
+              <div className="relative mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full rounded-md border border-slate-300 px-3 py-2 pr-11 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={
+                    showPassword ? "Sembunyikan password" : "Tampilkan password"
+                  }
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-700 cursor-pointer"
+                >
+                  <img
+                    src="/img/eye-svgrepo-com.svg"
+                    alt=""
+                    aria-hidden="true"
+                    className="h-5 w-5"
+                  />
+                </button>
+              </div>
             </div>
             <div>
               <label

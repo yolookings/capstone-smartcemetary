@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/browser";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -46,7 +47,9 @@ export default function LoginPage() {
     <div className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4">
       <div className="w-full max-w-md bg-white p-10 rounded-2xl shadow-xl border">
         <h2 className="text-3xl font-bold text-center mb-2">Login</h2>
-        <p className="text-center text-sm text-slate-600 mb-8">Masuk ke akun Smart Cemetery</p>
+        <p className="text-center text-sm text-slate-600 mb-8">
+          Masuk ke akun Smart Cemetery
+        </p>
 
         {error && (
           <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded mb-4">
@@ -68,14 +71,31 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
-              placeholder="••••••••"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 pr-11"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                aria-label={
+                  showPassword ? "Sembunyikan password" : "Tampilkan password"
+                }
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-700 cursor-pointer"
+              >
+                <img
+                  src="/img/eye-svgrepo-com.svg"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-5 w-5"
+                />
+              </button>
+            </div>
           </div>
           <button
             type="submit"
@@ -87,7 +107,9 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center mt-4 text-sm">
-          <Link href="/auth/register" className="text-emerald-600">Daftar sekarang</Link>
+          <Link href="/auth/register" className="text-emerald-600">
+            Daftar sekarang
+          </Link>
         </p>
       </div>
     </div>
