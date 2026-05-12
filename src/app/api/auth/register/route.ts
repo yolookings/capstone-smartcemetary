@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-auth";
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
+    const { email, password, name, telegramChatId } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email dan password wajib diisi" }, { status: 400 });
@@ -22,6 +22,13 @@ export async function POST(req: Request) {
     if (error) {
       console.error("Supabase Auth Error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (telegramChatId) {
+      await supabaseAdmin
+        .from('profiles')
+        .update({ telegram_chat_id: telegramChatId })
+        .eq('id', data.user.id);
     }
 
     return NextResponse.json({ 

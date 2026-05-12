@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { uploadFile } from "@/lib/storage";
+import { getAdminTelegramIds, notifyAdminsNewSubmission } from "@/lib/telegram";
+import { notifyUserSubmissionConfirmation } from "@/lib/whatsapp";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -61,8 +63,9 @@ export async function POST(req: Request) {
     const ktp = formData.get("ktp") as File;
     const kk = formData.get("kk") as File;
     const suratKematian = formData.get("suratKematian") as File;
+    const suratRtRw = formData.get("suratRtRw") as File;
 
-    if (!nik || !deceasedDate || !ktp || !suratKematian) {
+    if (!nik || !deceasedDate || !ktp || !suratKematian || !suratRtRw) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
     }
 
@@ -76,10 +79,18 @@ export async function POST(req: Request) {
       throw new Error('Failed to create pengajuan');
     }
 
+    const profileRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=phone`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const profiles = await profileRes.json();
+    const profile = profiles[0];
+
     const files = [
       { file: ktp, type: "KTP" },
       { file: kk, type: "KK" },
-      { file: suratKematian, type: "SURAT_KEMATIAN" }
+      { file: suratKematian, type: "SURAT_KEMATIAN" },
+      { file: suratRtRw, type: "SURAT_RT_RW" }
     ];
 
     for (const f of files) {
@@ -109,6 +120,23 @@ export async function POST(req: Request) {
       blok: 'TBA',
       nomor: 'TBA',
     });
+
+    await notifyAdminsNewSubmission({
+      pengajuanId,
+      applicantName,
+      nik,
+      relationship
+    }).catch(err => console.error("[TELEGRAM] Notification failed:", err));
+
+    const userPhone = profile?.phone;
+    if (userPhone) {
+      notifyUserSubmissionConfirmation({
+        userPhone,
+        pengajuanId,
+        applicantName,
+        nik
+      }).catch(err => console.error("[WA] Submit confirm failed:", err));
+    }
 
     return NextResponse.json({ message: "Pengajuan berhasil dikirim", id: pengajuanId });
   } catch (error: any) {

@@ -15,6 +15,7 @@ export default function BaruPengajuanPage() {
   const [ktp, setKtp] = useState<File | null>(null);
   const [kk, setKk] = useState<File | null>(null);
   const [suratKematian, setSuratKematian] = useState<File | null>(null);
+  const [suratRtRw, setSuratRtRw] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -47,6 +48,7 @@ export default function BaruPengajuanPage() {
       if (ktp) formData.append("ktp", ktp);
       if (kk) formData.append("kk", kk);
       if (suratKematian) formData.append("suratKematian", suratKematian);
+      if (suratRtRw) formData.append("suratRtRw", suratRtRw);
 
       const res = await fetch("/api/pengajuan", {
         method: "POST",
@@ -201,10 +203,11 @@ export default function BaruPengajuanPage() {
               <div className="w-10 h-10 bg-neutral rounded-full flex items-center justify-center font-bold text-primary">3</div>
               <h2 className="text-xl font-bold text-slate-900">Lampiran Dokumen</h2>
             </div>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               <UploadBox label="Upload KTP" file={ktp} setFile={setKtp} id="ktp" />
               <UploadBox label="Upload KK" file={kk} setFile={setKk} id="kk" />
               <UploadBox label="Surat Kematian" file={suratKematian} setFile={setSuratKematian} id="sk" />
+              <UploadBox label="Surat RT/RW" file={suratRtRw} setFile={setSuratRtRw} id="srt" />
             </div>
           </div>
 
