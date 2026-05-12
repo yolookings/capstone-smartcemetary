@@ -9,7 +9,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -37,11 +37,14 @@ export default function RegisterPage() {
       }
 
       if (data.user) {
+        const normalizedPhone = phoneNumber.replace(/^0/, "62");
         await supabase.from("profiles").insert({
           id: data.user.id,
           email: email,
           full_name: name,
           role: "USER",
+          phone: normalizedPhone || null,
+          whatsapp_number: normalizedPhone || null,
         });
 
         router.push("/auth/login?registered=true");
@@ -145,6 +148,26 @@ export default function RegisterPage() {
                   />
                 </button>
               </div>
+            </div>
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Nomor HP (untuk Telegram)
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                placeholder="082134170234"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Masukkan nomor HP yang terhubung dengan Whatsapp Anda.
+              </p>
             </div>
           </div>
 

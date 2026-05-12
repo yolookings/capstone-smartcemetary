@@ -49,6 +49,7 @@ export default function PengajuanPage() {
       PENDING: { icon: Clock, bg: 'bg-amber-100', text: 'text-amber-600', label: 'Menunggu' },
       APPROVED: { icon: CheckCircle, bg: 'bg-emerald-100', text: 'text-emerald-600', label: 'Disetujui' },
       REVISION: { icon: AlertCircle, bg: 'bg-rose-100', text: 'text-rose-600', label: 'Revisi' },
+      NEED_REVISION: { icon: AlertCircle, bg: 'bg-rose-100', text: 'text-rose-600', label: 'Perlu Revisi' },
       REJECTED: { icon: AlertCircle, bg: 'bg-slate-100', text: 'text-slate-600', label: 'Ditolak' },
     };
     return config[status] || config.PENDING;
@@ -138,9 +139,9 @@ export default function PengajuanPage() {
                   <div className="mb-8">
                     <h3 className="font-bold text-slate-900 mb-4">Status Verifikasi</h3>
                     <div className="flex items-center gap-4">
-                      {['PENDING', 'APPROVED', 'REVISION', 'REJECTED'].map((s, i) => {
+                      {['PENDING', 'NEED_REVISION', 'APPROVED', 'REJECTED'].map((s, i) => {
                         const isActive = selected.status === s;
-                        const isPast = ['PENDING', 'APPROVED', 'REVISION', 'REJECTED'].indexOf(selected.status) > i;
+                        const isPast = ['PENDING', 'NEED_REVISION', 'APPROVED', 'REJECTED'].indexOf(selected.status) > i;
                         const config = getStatusIcon(s);
                         const Icon = config.icon;
                         return (
@@ -166,6 +167,24 @@ export default function PengajuanPage() {
                     <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                       <h4 className="font-medium text-amber-800 mb-2">Catatan dari Admin:</h4>
                       <p className="text-amber-700">{selected.notes}</p>
+                    </div>
+                  )}
+
+                  {selected.status === 'NEED_REVISION' && (
+                    <div className="mt-6 p-6 bg-rose-50 border-2 border-rose-300 rounded-xl">
+                      <div className="flex items-center gap-3 mb-4">
+                        <AlertCircle className="text-rose-600" size={24} />
+                        <h3 className="text-lg font-bold text-rose-800">Dokumen Memerlukan Revisi</h3>
+                      </div>
+                      <p className="text-rose-700 mb-4">
+                        Silakan upload dokumen yang telah diperbaiki sesuai catatan admin di atas.
+                      </p>
+                      <Link 
+                        href={`/dashboard/pengajuan/revision?id=${selected.id}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+                      >
+                        Upload Dokumen Revisi
+                      </Link>
                     </div>
                   )}
 

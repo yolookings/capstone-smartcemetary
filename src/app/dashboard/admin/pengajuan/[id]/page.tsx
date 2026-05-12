@@ -67,6 +67,9 @@ export default function PengajuanDetailPage({ params }: Props) {
   const [id, setId] = useState<string>("");
   const [blok, setBlok] = useState("");
   const [nomor, setNomor] = useState("");
+  const [revisionModal, setRevisionModal] = useState(false);
+  const [revisionNote, setRevisionNote] = useState("");
+  const [requestingRevision, setRequestingRevision] = useState(false);
 
   useEffect(() => {
     params.then((p) => {
@@ -117,6 +120,32 @@ export default function PengajuanDetailPage({ params }: Props) {
 
     fetchData(id);
     setUpdating(false);
+  };
+
+  const requestRevision = async () => {
+    if (!revisionNote.trim()) return;
+    setRequestingRevision(true);
+    
+    try {
+      const res = await fetch(`/api/admin/pengajuan/${id}/revision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revisionNote })
+      });
+      
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        setRevisionModal(false);
+        setRevisionNote("");
+        fetchData(id);
+      }
+    } catch (err) {
+      alert("Gagal mengirim permintaan revisi");
+    } finally {
+      setRequestingRevision(false);
+    }
   };
 
   const getPresignedUrl = async (fileKey: string) => {
@@ -454,10 +483,8 @@ export default function PengajuanDetailPage({ params }: Props) {
               </button>
 
               <button
-                onClick={() =>
-                  updateStatus("REVISION", "Perlu perbaikan dokumen")
-                }
-                disabled={updating || pengajuan.status === "REVISION"}
+                onClick={() => setRevisionModal(true)}
+                disabled={updating || pengajuan.status === 'REVISION'}
                 className="w-full py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <AlertCircle size={18} />
@@ -500,6 +527,36 @@ export default function PengajuanDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {revisionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4">Minta Revisi Dokumen</h3>
+            <textarea
+              className="w-full border border-slate-300 rounded-lg p-3 mb-4"
+              rows={4}
+              placeholder="Contoh: Foto KTP blur, please upload ulang dengan jelas"
+              value={revisionNote}
+              onChange={(e) => setRevisionNote(e.target.value)}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRevisionModal(false)}
+                className="flex-1 py-3 border border-slate-300 rounded-xl font-semibold"
+              >
+                Batal
+              </button>
+              <button
+                onClick={requestRevision}
+                disabled={requestingRevision || !revisionNote.trim()}
+                className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 disabled:opacity-50"
+              >
+                {requestingRevision ? "Mengirim..." : "Kirim"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

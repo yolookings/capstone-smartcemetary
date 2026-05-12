@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CHUNKS_FILE = path.join(__dirname, "../../rag_chunks.json");
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL_NAME = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
+const MODEL_NAME = "nvidia/llama-3.1-nemotron-70b-instruct:free";
 
 let cachedChunks: string[] = [];
 
