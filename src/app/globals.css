@@ -48,3 +48,7 @@ h1, h2, h3, h4, h5, h6 {
 .input-pill {
   @apply bg-white border border-slate-200 rounded-full px-6 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all;
 }
+
+.input-field {
+  @apply bg-white border border-slate-200 rounded-xl px-4 py-3 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all w-full;
+}

@@ -55,8 +55,10 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const nik = formData.get("nik") as string;
+    const deceasedName = formData.get("deceasedName") as string;
     const deceasedDate = formData.get("deceasedDate") as string;
     const applicantName = formData.get("applicantName") as string;
+    const applicantEmail = formData.get("applicantEmail") as string;
     const applicantPhone = formData.get("applicantPhone") as string;
     const relationship = formData.get("relationship") as string;
     
@@ -112,8 +114,10 @@ export async function POST(req: Request) {
       pengajuan_id: pengajuanId,
       user_id: userId,
       nik: nik,
+      deceased_name: deceasedName,
       deceased_date: deceasedDate,
       applicant_name: applicantName,
+      applicant_email: applicantEmail,
       applicant_phone: applicantPhone,
       relationship: relationship,
       status: 'RESERVED',

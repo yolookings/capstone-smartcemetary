@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, MessageSquare, Loader2 } from "lucide-react";
+import { Snackbar, useSnackbar } from "@/components/snackbar";
 
 export default function StatusUpdateForm({ 
   pengajuanId, 
@@ -17,9 +18,13 @@ export default function StatusUpdateForm({
   const [notes, setNotes] = useState(initialNotes);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  
+  const { snackbar, showSnackbar, hideSnackbar } = useSnackbar();
 
   const handleUpdate = async () => {
     setLoading(true);
+    showSnackbar({ message: "Memperbarui status...", type: "loading", duration: 10000 });
+    
     try {
       const res = await fetch(`/api/admin/pengajuan/${pengajuanId}`, {
         method: "PATCH",
@@ -28,10 +33,26 @@ export default function StatusUpdateForm({
       });
 
       if (res.ok) {
-        router.refresh();
+        const statusMessages: Record<string, string> = {
+          APPROVED: "✅ Pengajuan berhasil DISETUJI! Pemohon akan menerima notifikasi WhatsApp.",
+          REJECTED: "❌ Pengajuan telah DITOLAK. Pemohon akan menerima notifikasi WhatsApp.",
+          REVISION: "⚠️ Permintaan revisi telah dikirim. Pemohon akan menerima notifikasi WhatsApp.",
+          PENDING: "⏳ Status pengajuan diubah menjadi Tunda.",
+        };
+        showSnackbar({ 
+          message: statusMessages[status] || "Status berhasil diperbarui!", 
+          type: "success", 
+          duration: 5000 
+        });
+        setTimeout(() => {
+          router.refresh();
+        }, 2000);
+      } else {
+        showSnackbar({ message: "Gagal memperbarui status.", type: "error", duration: 4000 });
       }
     } catch (err) {
       console.error(err);
+      showSnackbar({ message: "Terjadi kesalahan sistem.", type: "error", duration: 4000 });
     } finally {
       setLoading(false);
     }
@@ -45,6 +66,14 @@ export default function StatusUpdateForm({
   ];
 
   return (
+    <div className="contents">
+    <Snackbar
+      open={snackbar !== null}
+      message={snackbar?.message || ""}
+      type={snackbar?.type || "success"}
+      duration={snackbar?.duration || 4000}
+      onClose={hideSnackbar}
+    />
     <div className="space-y-6">
       <div className="space-y-3">
         <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Update Status</p>
@@ -89,6 +118,7 @@ export default function StatusUpdateForm({
         {loading && <Loader2 className="animate-spin" size={20} />}
         Simpan Perubahan
       </button>
+    </div>
     </div>
   );
 }

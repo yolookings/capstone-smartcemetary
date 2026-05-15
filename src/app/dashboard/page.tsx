@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FileText, Clock, CheckCircle, AlertCircle, Plus, MapPin, Eye, Search, TrendingUp, TrendingDown, Users, Calendar } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
@@ -11,6 +12,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
   const [pengajuanList, setPengajuanList] = useState<any[]>([]);
   const [myGraves, setMyGraves] = useState<any[]>([]);
+  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function DashboardPage() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
       if (!authUser) {
-        window.location.href = '/auth/login';
+        router.push('/auth/login');
         return;
       }
 
@@ -43,42 +45,33 @@ export default function DashboardPage() {
       const isAdmin = profileData?.role === 'ADMIN';
 
       if (isAdmin) {
-        const pengajuanRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/pengajuan?select=*,profiles(email,full_name),makam(nik,blok,nomor)&order=created_at.desc`,
-          {
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-            },
-          }
-        );
-        const allPengajuan = await pengajuanRes.json();
-        setPengajuanList(allPengajuan || []);
-      } else {
-        const pengajuanRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/pengajuan?user_id=eq.${authUser.id}&select=*,makam(nik,blok,nomor)&order=created_at.desc`,
-          {
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-            },
-          }
-        );
-        const userPengajuan = await pengajuanRes.json();
-        setPengajuanList(userPengajuan || []);
-
-        const gravesRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/makam?user_id=eq.${authUser.id}`,
-          {
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-            },
-          }
-        );
-        const graves = await gravesRes.json();
-        setMyGraves(graves || []);
+        router.push('/dashboard/admin');
+        return;
       }
+
+      const pengajuanRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/pengajuan?user_id=eq.${authUser.id}&select=*,makam(nik,blok,nomor)&order=created_at.desc`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
+      const userPengajuan = await pengajuanRes.json();
+      setPengajuanList(userPengajuan || []);
+
+      const gravesRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/makam?user_id=eq.${authUser.id}`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
+      const graves = await gravesRes.json();
+      setMyGraves(graves || []);
 
       setLoading(false);
     };
@@ -92,134 +85,7 @@ export default function DashboardPage() {
     </div>
   );
 
-  const isAdmin = profile?.role === 'ADMIN';
-
-  if (isAdmin) {
-    return <AdminDashboard pengajuanList={pengajuanList} profile={profile} />;
-  } else {
-    return <UserDashboard user={user} profile={profile} pengajuanList={pengajuanList} myGraves={myGraves} />;
-  }
-}
-
-function AdminDashboard({ pengajuanList, profile }: { pengajuanList: any[]; profile: any }) {
-  const getCount = (status: string | null) => status === null 
-    ? pengajuanList.length 
-    : pengajuanList.filter((s: any) => s.status === status).length;
-
-  const STATUS_SECTIONS = [
-    { key: 'PENDING', label: 'Menunggu', color: 'amber', icon: Clock },
-    { key: 'REVISION', label: 'Sedang Diperiksa', color: 'rose', icon: AlertCircle },
-    { key: 'APPROVED', label: 'Disetujui', color: 'emerald', icon: CheckCircle },
-    { key: 'REJECTED', label: 'Ditolak', color: 'slate', icon: AlertCircle },
-  ];
-
-  return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard Admin</h1>
-          <p className="text-slate-500 text-sm">Selamat datang, {profile?.full_name || 'Admin'}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-              <FileText size={20} />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-900">{getCount(null)}</p>
-              <p className="text-xs text-slate-500">Total</p>
-            </div>
-          </div>
-        </div>
-        {STATUS_SECTIONS.map(section => {
-          const Icon = section.icon;
-          const count = getCount(section.key);
-          const colorMap: Record<string, string> = {
-            amber: 'bg-amber-100 text-amber-600',
-            rose: 'bg-rose-100 text-rose-600',
-            emerald: 'bg-emerald-100 text-emerald-600',
-            slate: 'bg-slate-100 text-slate-600',
-          };
-          return (
-            <div key={section.key} className="bg-white p-4 rounded-xl border shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMap[section.color]}`}>
-                  <Icon size={20} />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-900">{count}</p>
-                  <p className="text-xs text-slate-500">{section.label}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Status Sections */}
-      {STATUS_SECTIONS.map(section => {
-        const items = pengajuanList.filter((p: any) => p.status === section.key);
-        if (items.length === 0) return null;
-        
-        const Icon = section.icon;
-        const colorMap: Record<string, string> = {
-          amber: 'border-amber-200 bg-amber-50',
-          rose: 'border-rose-200 bg-rose-50',
-          emerald: 'border-emerald-200 bg-emerald-50',
-          slate: 'border-slate-200 bg-slate-50',
-        };
-        const badgeMap: Record<string, string> = {
-          amber: 'bg-amber-100 text-amber-700',
-          rose: 'bg-rose-100 text-rose-700',
-          emerald: 'bg-emerald-100 text-emerald-700',
-          slate: 'bg-slate-100 text-slate-700',
-        };
-
-        return (
-          <div key={section.key} className={`rounded-2xl border p-6 ${colorMap[section.color]}`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Icon size={20} className={`text-${section.color}-600`} />
-                <h2 className="font-bold text-slate-900">{section.label}</h2>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${badgeMap[section.color]}`}>
-                  {items.length}
-                </span>
-              </div>
-            </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {items.slice(0, 6).map((p: any) => (
-                <Link
-                  key={p.id}
-                  href={`/dashboard/admin/pengajuan/${p.id}`}
-                  className="bg-white p-4 rounded-xl border hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-slate-900 text-sm">#{p.id.slice(0, 8).toUpperCase()}</span>
-                    <span className="text-xs text-slate-500">
-                      {new Date(p.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-600 truncate">{p.profiles?.email || '-'}</p>
-                  <p className="text-xs text-slate-400 mt-1">NIK: {p.makam?.nik || '-'}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-
-      {pengajuanList.length === 0 && (
-        <div className="bg-white p-12 rounded-2xl border text-center">
-          <FileText className="mx-auto text-slate-300 mb-4" size={48} />
-          <p className="text-slate-500">Belum ada pengajuan</p>
-        </div>
-      )}
-    </div>
-  );
+  return <UserDashboard user={user} profile={profile} pengajuanList={pengajuanList} myGraves={myGraves} />;
 }
 
 function StatCard({ title, value, icon, color }: { title: string; value: number; icon: React.ReactNode; color: string }) {
