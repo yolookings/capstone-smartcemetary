@@ -45,3 +45,4 @@ data-pdf/
 vector_store.pkl
 
 /img/
+.sisyphus
