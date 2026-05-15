@@ -67,9 +67,12 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
       <div className="container relative flex h-20 items-center justify-between mx-auto px-4 lg:px-12">
-        <Link href="/" className="relative z-20 flex shrink-0 items-center gap-3">
+        <Link
+          href="/"
+          className="relative z-20 flex shrink-0 items-center gap-3"
+        >
           <Image
-            src="/img/logo-smartcemetary.png"
+            src="/logo-smartcemetary.png"
             alt="Smart Cemetery"
             width={56}
             height={56}
