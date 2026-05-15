@@ -20,6 +20,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Smart Cemetery - Aplikasi Pemakaman Digital",
   description: "Sistem Manajemen Pemakaman Digital Modern",
+  icons: {
+    icon: "/logo-smartcemetary.svg",
+  },
 };
 
 export default function RootLayout({
