@@ -1,14 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Shield, LayoutDashboard, FileText, UserCheck, Database, LogOut, Bell, Settings } from "lucide-react";
+import { Shield, LayoutDashboard, FileText, Users, MapPin, BarChart3, Settings, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const menuItems: NavItem[] = [
+  { href: "/dashboard/admin", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+  { href: "/dashboard/admin/pengajuan", label: "Validasi Pengajuan", icon: <FileText size={18} /> },
+  { href: "/dashboard/admin/users", label: "Kelola Pengguna", icon: <Users size={18} /> },
+  { href: "/dashboard/admin/makam", label: "Kelola Makam", icon: <MapPin size={18} /> },
+  { href: "/dashboard/admin/cemetery", label: "Monitoring Makam", icon: <MapPin size={18} /> },
+  { href: "/dashboard/admin/laporan", label: "Laporan & Statistik", icon: <BarChart3 size={18} /> },
+  { href: "/dashboard/admin/notifications", label: "Notifikasi", icon: <Bell size={18} /> },
+];
+
+const bottomMenuItems: NavItem[] = [
+  { href: "/dashboard/admin/pengaturan", label: "Pengaturan", icon: <Settings size={18} /> },
+];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<{ full_name: string } | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
 
   useEffect(() => {
@@ -31,13 +53,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
       );
       const profiles = await profileRes.json();
-      const profile = profiles?.[0];
+      const profileData = profiles?.[0];
 
-      if (profile?.role !== 'ADMIN') {
+      if (profileData?.role !== 'ADMIN') {
         router.replace('/dashboard');
         return;
       }
 
+      setProfile(profileData);
       setLoading(false);
     };
 
@@ -52,41 +75,69 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  const isActive = (href: string) => {
+    if (href === "/dashboard/admin") {
+      return pathname === href;
+    }
+    return pathname.startsWith(href);
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
-      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-4">
-        <div className="px-3 py-4 mb-4">
-          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center mb-3">
-            <Shield className="text-white" size={20} />
+      <aside className="w-56 bg-white border-r border-slate-200 flex flex-col shadow-sm">
+        <div className="p-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center">
+              <Shield className="text-white" size={18} />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900 text-sm">Admin Panel</h2>
+              <p className="text-xs text-slate-500">Smart Cemetery</p>
+            </div>
           </div>
-          <h2 className="font-bold text-slate-900">Admin Panel</h2>
-          <p className="text-xs text-slate-500">Smart Cemetery</p>
         </div>
         
-        <div className="space-y-1 flex-1">
-          <Link href="/dashboard/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-            <LayoutDashboard size={18} />
-            <span className="text-sm font-semibold">Dashboard</span>
-          </Link>
-          <Link href="/dashboard/admin/pengajuan" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100">
-            <FileText size={18} />
-            <span className="text-sm font-semibold">Semua Pengajuan</span>
-          </Link>
-          <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100">
-            <UserCheck size={18} />
-            <span className="text-sm font-semibold">Mode User</span>
-          </Link>
-        </div>
-        
-        <div className="pt-4 border-t border-slate-100">
-          <Link href="/dashboard/chat" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100">
-            <Bell size={18} />
-            <span className="text-sm font-semibold">Notifikasi</span>
-          </Link>
+        <nav className="flex-1 p-2 space-y-0.5">
+          {menuItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                isActive(item.href)
+                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 border border-emerald-600"
+                  : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-100 border border-transparent"
+              }`}
+            >
+              {item.icon}
+              <span className="text-sm font-medium">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="p-2 border-t border-slate-100 space-y-0.5">
+          {bottomMenuItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                isActive(item.href)
+                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 border border-emerald-600"
+                  : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-100 border border-transparent"
+              }`}
+            >
+              {item.icon}
+              <span className="text-sm font-medium">{item.label}</span>
+            </Link>
+          ))}
+          
+          <div className="mt-3 px-3 py-2.5 bg-slate-50 rounded-lg border border-slate-100">
+            <p className="text-xs text-slate-400">Logged in as</p>
+            <p className="text-sm font-semibold text-slate-700 truncate">{profile?.full_name || 'Admin'}</p>
+          </div>
         </div>
       </aside>
 
-      <main className="flex-1 bg-gradient-to-br from-slate-50 to-slate-100 overflow-auto p-8">
+      <main className="flex-1 bg-gradient-to-br from-slate-50 to-slate-100 overflow-auto">
         {children}
       </main>
     </div>

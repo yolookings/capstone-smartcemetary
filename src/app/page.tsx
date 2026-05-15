@@ -16,15 +16,16 @@ export default function Home() {
             <div className="flex-1 space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold tracking-widest uppercase">
                 <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
-                Digital Curator
+                Dinas Lingkungan Hidup Kota Surabaya
               </div>
               <h1 className="text-6xl lg:text-7xl font-extrabold tracking-tighter text-slate-900 leading-[1.1]">
                 Aplikasi Pemakaman Berbasis Digital
               </h1>
-              <p className="text-lg text-secondary max-w-xl leading-relaxed">
-                Modernisasi administrasi pemakaman yang mengedepankan
-                penghormatan dan efisiensi. Daftarkan dan kelola data makam
-                dengan sentuhan teknologi modern.
+              <p className="text-lg text-secondary max-w-xl leading-relaxed text-justify">
+                Sistem informasi layanan pemakaman digital yang memudahkan
+                masyarakat dalam melakukan pendaftaran, pengajuan, dan
+                pengelolaan administrasi secara terpadu, transparan, dan
+                efisien.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link
