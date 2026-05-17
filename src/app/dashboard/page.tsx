@@ -138,7 +138,7 @@ function UserDashboard({ user, profile, pengajuanList, myGraves }: { user: any; 
     <div className="space-y-12 pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Halo, {profile?.full_name || user.email}</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Halo, {profile?.username ? `@${profile.username}` : profile?.full_name || user.email}</h1>
           <p className="text-secondary text-sm mt-2">Selamat datang di Smart Cemetery.</p>
         </div>
         <Link 

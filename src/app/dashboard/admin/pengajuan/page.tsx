@@ -159,33 +159,32 @@ export default function AdminPengajuanPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-        <p className="text-slate-500">Memuat data pengajuan...</p>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] p-8">
-        <div className="bg-white rounded-3xl border border-red-200 shadow-sm p-8 max-w-lg text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertCircle className="text-red-500" size={40} />
+      <div className="flex flex-col items-center justify-center h-96 p-8">
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-12 max-w-lg text-center">
+          <div className="w-24 h-24 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
+            <AlertCircle className="text-red-500" size={48} />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Gagal Memuat Data</h2>
-          <p className="text-slate-500 mb-6">{error}</p>
-          <div className="flex gap-3 justify-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">Gagal Memuat Data</h2>
+          <p className="text-slate-500 mb-8">{error}</p>
+          <div className="flex gap-4 justify-center">
             <button
               onClick={() => fetchData(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
+              className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
             >
               <RefreshCw size={18} />
               Coba Lagi
             </button>
             <Link
               href="/dashboard/admin"
-              className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition-colors"
+              className="px-8 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-neutral transition-all"
             >
               Kembali
             </Link>
@@ -196,18 +195,19 @@ export default function AdminPengajuanPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8 pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Validasi Pengajuan</h1>
-          <p className="text-slate-500 text-sm mt-1">Verifikasi dan approve pengajuan makam</p>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Validasi Pengajuan</h1>
+          <p className="text-secondary text-sm mt-2">Verifikasi dan approve pengajuan makam</p>
         </div>
         <button
           onClick={() => fetchData(true)}
           disabled={refreshing}
-          className="p-2.5 bg-white rounded-xl border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition-all disabled:opacity-50"
+          className="bg-white px-6 py-3 rounded-xl font-bold border border-slate-200 text-slate-600 hover:text-primary hover:border-primary transition-all flex items-center gap-2 shadow-sm"
         >
           <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+          Refresh
         </button>
       </div>
 
@@ -254,22 +254,22 @@ export default function AdminPengajuanPage() {
         />
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-bold text-slate-900 text-lg">Daftar Pengajuan</h3>
-          <div className="flex items-center gap-3">
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-slate-50 flex justify-between items-center">
+          <h3 className="font-bold text-xl text-slate-900">Daftar Pengajuan</h3>
+          <div className="flex items-center gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
                 placeholder="Cari email atau nama..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48"
+                className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary w-56"
               />
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Filter size={14} />
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Filter size={16} />
               <span>Menampilkan {filteredList.length} dari {stats.total} pengajuan</span>
             </div>
           </div>
@@ -279,45 +279,45 @@ export default function AdminPengajuanPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="text-left px-6 py-4">Pemohon</th>
-                  <th className="text-left px-6 py-4">Status</th>
-                  <th className="text-left px-6 py-4">Tanggal</th>
-                  <th className="text-right px-6 py-4">Aksi</th>
+                <tr className="bg-neutral text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  <th className="text-left px-8 py-5">Pemohon</th>
+                  <th className="text-left px-8 py-5">Status</th>
+                  <th className="text-left px-8 py-5">Tanggal</th>
+                  <th className="text-right px-8 py-5">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredList.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm">
+                  <tr key={p.id} className="hover:bg-neutral transition-all">
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center text-white font-bold">
                           {p.profiles?.full_name?.charAt(0) || p.profiles?.email?.charAt(0) || '?'}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{p.profiles?.full_name || 'Unknown'}</p>
-                          <p className="text-xs text-slate-400">{p.profiles?.email || '-'}</p>
+                          <p className="text-sm font-bold text-slate-900">{p.profiles?.full_name || 'Unknown'}</p>
+                          <p className="text-xs text-slate-400 font-medium">{p.profiles?.email || '-'}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(p.status)}`}>
+                    <td className="px-8 py-5">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusColor(p.status)}`}>
                         {getStatusLabel(p.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-500">
+                    <td className="px-8 py-5 text-sm text-slate-500 font-medium">
                       {new Date(p.created_at).toLocaleDateString('id-ID', { 
                         day: 'numeric', 
                         month: 'short',
                         year: 'numeric'
                       })}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-8 py-5 text-right">
                       <Link 
                         href={`/dashboard/admin/pengajuan/${p.id}`}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-dark transition-all shadow-lg shadow-primary/20"
                       >
-                        <Eye size={14} />
+                        <Eye size={16} />
                         Verifikasi
                       </Link>
                     </td>
@@ -327,14 +327,14 @@ export default function AdminPengajuanPage() {
             </table>
           </div>
         ) : (
-          <div className="p-16 text-center">
-            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Inbox className="text-slate-300" size={40} />
+          <div className="p-20 text-center">
+            <div className="w-24 h-24 bg-neutral rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Inbox className="text-slate-300" size={48} />
             </div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">
+            <h3 className="text-xl font-bold text-slate-700 mb-2">
               {filter ? 'Tidak ada data' : 'Belum ada pengajuan'}
             </h3>
-            <p className="text-slate-500 text-sm mb-4">
+            <p className="text-slate-500 text-sm mb-6">
               {filter 
                 ? `Tidak ada pengajuan dengan status tersebut`
                 : 'Pengajuan akan muncul di sini'}
@@ -342,7 +342,7 @@ export default function AdminPengajuanPage() {
             {filter && (
               <button
                 onClick={() => setFilter(null)}
-                className="text-emerald-600 font-medium text-sm hover:underline"
+                className="text-primary font-bold text-sm hover:underline"
               >
                 Tampilkan semua pengajuan
               </button>
@@ -356,21 +356,29 @@ export default function AdminPengajuanPage() {
 
 function StatCard({ label, value, icon, color, active, onClick }: { label: string; value: number; icon: React.ReactNode; color: string; active?: boolean; onClick?: () => void }) {
   const activeColorMap: Record<string, string> = {
-    blue: 'bg-blue-600 text-white border-blue-600',
-    amber: 'bg-amber-500 text-white border-amber-500',
-    rose: 'bg-rose-500 text-white border-rose-500',
-    emerald: 'bg-emerald-600 text-white border-emerald-600',
-    slate: 'bg-slate-600 text-white border-slate-600',
+    blue: 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20',
+    amber: 'bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/20',
+    rose: 'bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/20',
+    emerald: 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20',
+    slate: 'bg-slate-600 text-white border-slate-600 shadow-lg shadow-slate-600/20',
+  };
+
+  const colorIconMap: Record<string, string> = {
+    blue: 'text-blue-500',
+    amber: 'text-amber-500',
+    rose: 'text-rose-500',
+    emerald: 'text-emerald-500',
+    slate: 'text-slate-500',
   };
 
   return (
     <button 
       onClick={onClick}
-      className={`p-5 rounded-2xl border-2 transition-all text-left ${active ? activeColorMap[color] : 'bg-white border-slate-200 hover:border-emerald-300'}`}
+      className={`p-6 rounded-xl border transition-all text-left ${active ? activeColorMap[color] : 'bg-white border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/30'}`}
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-3">
         <span className={`text-xs font-bold uppercase tracking-wider ${active ? 'text-white/80' : 'text-slate-400'}`}>{label}</span>
-        <div className={active ? '' : 'opacity-60'}>
+        <div className={active ? 'text-white' : colorIconMap[color]}>
           {icon}
         </div>
       </div>

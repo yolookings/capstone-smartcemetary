@@ -139,7 +139,7 @@ export default function AdminCemeteryPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         <p className="text-slate-500">Memuat data makam...</p>
       </div>
     );
@@ -170,7 +170,7 @@ export default function AdminCemeteryPage() {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Monitoring Makam</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Monitoring Makam</h1>
           <p className="text-slate-500 text-sm mt-1">Pantau ketersediaan dan penggunaan makam</p>
         </div>
         <div className="flex items-center gap-3">

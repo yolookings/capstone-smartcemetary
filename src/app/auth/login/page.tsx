@@ -38,15 +38,32 @@ function LoginContent() {
     setError("");
 
     const loginField = email.includes("@") ? email : email;
+    const fullEmail = loginField.endsWith("@gmail.com") ? loginField : `${loginField}@gmail.com`;
     
+    // First check if user exists and is verified
+    const { data: userData } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("email", fullEmail.toLowerCase())
+      .single();
+
+    if (!userData) {
+      setError("Email atau password salah");
+      setLoading(false);
+      return;
+    }
+
+    // Now try to sign in
     const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email: loginField.endsWith("@gmail.com") ? loginField : `${loginField}@gmail.com`,
+      email: fullEmail,
       password,
     });
 
     if (loginError) {
       if (loginError.message.includes("Invalid login credentials")) {
         setError("Email atau password salah");
+      } else if (loginError.message.includes("Email not confirmed")) {
+        setError("Email belum diverifikasi. Silakan cek inbox email Anda untuk tautan verifikasi.");
       } else {
         setError(loginError.message);
       }

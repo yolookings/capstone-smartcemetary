@@ -90,21 +90,21 @@ export default function AdminUsersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <AlertCircle className="mx-auto text-red-500 mb-2" size={48} />
-          <p className="text-slate-600 font-medium">{error}</p>
+          <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
+          <p className="text-slate-600 font-bold">{error}</p>
           <button
             onClick={fetchUsers}
-            className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg"
+            className="mt-6 px-6 py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark transition-all"
           >
             Coba Lagi
           </button>
@@ -114,46 +114,46 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8 pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Kelola Pengguna</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Kelola Pengguna</h1>
+          <p className="text-secondary text-sm mt-2">
             Kelola semua pengguna sistem
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Users className="text-blue-600" size={24} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-xl border shadow-sm hover:shadow-xl transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+              <Users className="text-blue-500" size={24} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+              <p className="text-3xl font-bold text-slate-900">{stats.total}</p>
               <p className="text-sm text-slate-500">Total Pengguna</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-              <Shield className="text-emerald-600" size={24} />
+        <div className="bg-white p-6 rounded-xl border shadow-sm hover:shadow-xl transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+              <Shield className="text-emerald-500" size={24} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{stats.admins}</p>
+              <p className="text-3xl font-bold text-slate-900">{stats.admins}</p>
               <p className="text-sm text-slate-500">Admin</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-              <Users className="text-amber-600" size={24} />
+        <div className="bg-white p-6 rounded-xl border shadow-sm hover:shadow-xl transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+              <Users className="text-amber-500" size={24} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">
+              <p className="text-3xl font-bold text-slate-900">
                 {stats.regularUsers}
               </p>
               <p className="text-sm text-slate-500">Pengguna Biasa</p>
@@ -162,14 +162,14 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-100">
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-slate-50">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <h3 className="font-bold text-slate-900 text-lg">Daftar Pengguna</h3>
-            <div className="flex items-center gap-3">
+            <h3 className="font-bold text-xl text-slate-900">Daftar Pengguna</h3>
+            <div className="flex items-center gap-4">
               <div className="relative">
                 <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                   size={18}
                 />
                 <input
@@ -177,7 +177,7 @@ export default function AdminUsersPage() {
                   placeholder="Cari nama atau email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent w-64"
+                  className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64"
                 />
               </div>
               <select
@@ -185,7 +185,7 @@ export default function AdminUsersPage() {
                 onChange={(e) =>
                   setRoleFilter(e.target.value || null)
                 }
-                className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">Semua Role</option>
                 <option value="ADMIN">Admin</option>

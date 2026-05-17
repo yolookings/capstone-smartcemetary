@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Shield, LayoutDashboard, FileText, Users, MapPin, BarChart3, Settings, Bell } from "lucide-react";
+import { Shield, LayoutDashboard, FileText, Users, MapPin, BarChart3, Settings, Bell, LogOut, Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 
 interface NavItem {
@@ -13,22 +13,22 @@ interface NavItem {
 }
 
 const menuItems: NavItem[] = [
-  { href: "/dashboard/admin", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-  { href: "/dashboard/admin/pengajuan", label: "Validasi Pengajuan", icon: <FileText size={18} /> },
-  { href: "/dashboard/admin/users", label: "Kelola Pengguna", icon: <Users size={18} /> },
-  { href: "/dashboard/admin/makam", label: "Kelola Makam", icon: <MapPin size={18} /> },
-  { href: "/dashboard/admin/cemetery", label: "Monitoring Makam", icon: <MapPin size={18} /> },
-  { href: "/dashboard/admin/laporan", label: "Laporan & Statistik", icon: <BarChart3 size={18} /> },
-  { href: "/dashboard/admin/notifications", label: "Notifikasi", icon: <Bell size={18} /> },
+  { href: "/dashboard/admin", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
+  { href: "/dashboard/admin/pengajuan", label: "Validasi Pengajuan", icon: <FileText size={20} /> },
+  { href: "/dashboard/admin/users", label: "Kelola Pengguna", icon: <Users size={20} /> },
+  { href: "/dashboard/admin/cemetery", label: "Monitoring Makam", icon: <MapPin size={20} /> },
+  { href: "/dashboard/admin/laporan", label: "Laporan", icon: <BarChart3 size={20} /> },
+  { href: "/dashboard/admin/notifications", label: "Notifikasi", icon: <Bell size={20} /> },
 ];
 
 const bottomMenuItems: NavItem[] = [
-  { href: "/dashboard/admin/pengaturan", label: "Pengaturan", icon: <Settings size={18} /> },
+  { href: "/dashboard/admin/pengaturan", label: "Pengaturan", icon: <Settings size={20} /> },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ full_name: string } | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string; username: string } | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -44,7 +44,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       const userId = user.id;
       const profileRes = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role,full_name`,
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role,full_name,username`,
         {
           headers: {
             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -67,10 +67,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkAdmin();
   }, [router, supabase]);
 
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-neutral">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -82,64 +86,135 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return pathname.startsWith(href);
   };
 
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="w-56 bg-white border-r border-slate-200 flex flex-col shadow-sm">
-        <div className="p-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <Shield className="text-white" size={18} />
-            </div>
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Admin Panel</h2>
-              <p className="text-xs text-slate-500">Smart Cemetery</p>
-            </div>
-          </div>
-        </div>
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/auth/login');
+  };
+
+  const NavContent = ({ vertical = false }: { vertical?: boolean }) => (
+    <>
+      <nav className={`flex-1 py-4 ${vertical ? 'px-4' : 'px-3'} space-y-1 overflow-y-auto`}>
+        {menuItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              isActive(item.href)
+                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                : "text-slate-600 hover:bg-neutral"
+            }`}
+          >
+            <span className="flex-shrink-0">{item.icon}</span>
+            <span>{item.label}</span>
+          </Link>
+        ))}
+      </nav>
+
+      <div className={`py-4 ${vertical ? 'px-4' : 'px-3'} border-t border-slate-50 space-y-1`}>
+        {bottomMenuItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              isActive(item.href)
+                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                : "text-slate-600 hover:bg-neutral"
+            }`}
+          >
+            <span className="flex-shrink-0">{item.icon}</span>
+            <span>{item.label}</span>
+          </Link>
+        ))}
         
-        <nav className="flex-1 p-2 space-y-0.5">
-          {menuItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                isActive(item.href)
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 border border-emerald-600"
-                  : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-100 border border-transparent"
-              }`}
-            >
-              {item.icon}
-              <span className="text-sm font-medium">{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="p-2 border-t border-slate-100 space-y-0.5">
-          {bottomMenuItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                isActive(item.href)
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 border border-emerald-600"
-                  : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-100 border border-transparent"
-              }`}
-            >
-              {item.icon}
-              <span className="text-sm font-medium">{item.label}</span>
-            </Link>
-          ))}
-          
-          <div className="mt-3 px-3 py-2.5 bg-slate-50 rounded-lg border border-slate-100">
-            <p className="text-xs text-slate-400">Logged in as</p>
-            <p className="text-sm font-semibold text-slate-700 truncate">{profile?.full_name || 'Admin'}</p>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 w-full transition-all"
+        >
+          <LogOut size={20} className="flex-shrink-0" />
+          <span>Logout</span>
+        </button>
+        
+        {profile && (
+          <div className="mt-3 px-4 py-3 bg-neutral rounded-xl">
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Logged in as</p>
+            <p className="text-sm font-bold text-slate-800">
+              {profile.username ? `@${profile.username}` : profile.full_name}
+            </p>
           </div>
-        </div>
-      </aside>
+        )}
+      </div>
+    </>
+  );
 
-      <main className="flex-1 bg-gradient-to-br from-slate-50 to-slate-100 overflow-auto">
-        {children}
-      </main>
+  return (
+    <div className="min-h-screen bg-neutral">
+      <div className="lg:flex">
+        
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
+        
+        <aside className="hidden lg:flex lg:w-64 bg-white border-r border-slate-100 flex-col flex-shrink-0 transition-all duration-300 sticky top-0 h-screen">
+          <div className="h-20 flex items-center px-6 border-b border-slate-50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                <Shield className="text-white" size={18} />
+              </div>
+              <span className="font-bold text-slate-900 text-lg">Admin Panel</span>
+            </div>
+          </div>
+          <NavContent />
+        </aside>
+
+        
+        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col transform transition-transform duration-300 lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="h-20 flex items-center justify-between px-6 border-b border-slate-50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                <Shield className="text-white" size={18} />
+              </div>
+              <span className="font-bold text-slate-900 text-lg">Admin</span>
+            </div>
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 text-slate-400 hover:text-slate-600"
+            >
+              <X size={24} />
+            </button>
+          </div>
+          <NavContent vertical />
+        </aside>
+
+        <div className="flex-1 overflow-hidden">
+          <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-4 lg:px-12 flex-shrink-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-3 text-slate-400 hover:text-slate-600 hover:bg-neutral rounded-xl transition-all lg:hidden"
+            >
+              <Menu size={24} />
+            </button>
+            
+            <div className="hidden lg:block">
+              <span className="text-xl font-extrabold text-slate-900 tracking-tight">Admin Panel</span>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 rounded-full">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                <span className="text-sm font-bold text-primary uppercase tracking-wider">Online</span>
+              </div>
+            </div>
+          </header>
+
+          <main className="p-4 lg:p-12">
+            {children}
+          </main>
+        </div>
+      </div>
     </div>
   );
 }

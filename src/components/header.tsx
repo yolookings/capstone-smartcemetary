@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 
 export default function Header() {
@@ -12,8 +12,11 @@ export default function Header() {
   const [profile, setProfile] = useState<any>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/dashboard/admin');
 
   useEffect(() => {
+    if (isAdminRoute) return;
     const fetchUser = async () => {
       const {
         data: { user: authUser },

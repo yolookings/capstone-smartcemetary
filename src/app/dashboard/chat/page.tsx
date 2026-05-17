@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Loader2, Phone, MessageCircle } from "lucide-react";
 
-const WHATSAPP_NUMBER = "6282230243783";
+const WHATSAPP_NUMBER = "62881081201102";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<
