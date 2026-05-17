@@ -1,154 +1,106 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, X, MessageSquare } from "lucide-react";
+import { Send, Bot, User, Loader2, X, MessageSquare, ChevronDown } from "lucide-react";
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<
-    { role: "ai" | "user"; content: string }[]
-  >([
-    {
-      role: "ai",
-      content:
-        "Halo! Saya asisten AI Smart Cemetery. Ada yang bisa saya bantu terkait prosedur atau regulasi pemakaman?",
-    },
+  const [messages, setMessages] = useState<{ role: "ai" | "user"; content: string }[]>([
+    { role: "ai", content: "Halo! Saya asisten AI Smart Cemetery. Ada yang bisa saya bantu?" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const checkDrawer = () => {
+      const drawerOpen = document.body?.dataset.drawerOpen === "true";
+      if (drawerOpen && isOpen) setIsOpen(false);
+    };
+    checkDrawer();
+    const interval = setInterval(checkDrawer, 500);
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
-
     const userMsg = input;
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
-
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg }),
-      });
-
+      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: userMsg }) });
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "ai", content: data.response }]);
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", content: "Maaf, terjadi kesalahan koneksi." },
-      ]);
-    } finally {
-      setLoading(false);
-    }
+      setMessages((prev) => [...prev, { role: "ai", content: "Maaf, terjadi kesalahan koneksi." }]);
+    } finally { setLoading(false); }
   };
+
+  if (typeof window !== "undefined" && document.body?.dataset.drawerOpen === "true") return null;
 
   return (
     <>
-      {/* Floating Action Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-50 group"
-      >
-        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
-        {!isOpen && (
-          <span className="absolute right-20 bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-xl border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Tanya AI Assistant
-          </span>
-        )}
+      <button onClick={() => setIsOpen(!isOpen)} className={`fixed ${isMobile ? "bottom-6 right-6 w-14 h-14" : "bottom-8 right-8 w-16 h-16"} bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all z-40 group`}>
+        {isOpen ? <X size={isMobile ? 20 : 24} /> : <MessageSquare size={isMobile ? 20 : 24} />}
+        {!isOpen && !isMobile && <span className="absolute right-20 bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-xl border border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Tanya AI</span>}
       </button>
 
-      {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-28 right-8 w-[400px] h-[600px] bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          {/* Header */}
-          <div className="p-6 bg-primary text-white flex items-center gap-4">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-              <Bot size={28} />
+        <div className={`fixed ${isMobile ? "bottom-20 right-4 w-[calc(100vw-2rem)] h-[70vh] max-w-[400px]" : "bottom-28 right-8 w-[400px] h-[600px]"} bg-white rounded-[2rem] shadow-2xl border border-slate-100 flex flex-col overflow-hidden z-40 animate-in fade-in slide-in-from-bottom-4 duration-300`}>
+          <div className={`p-4 ${isMobile ? "py-3" : "p-6"} bg-primary text-white flex items-center justify-between`}>
+            <div className="flex items-center gap-3">
+              <div className={`${isMobile ? "w-10 h-10" : "w-12 h-12"} bg-white/20 rounded-xl flex items-center justify-center`}>
+                <Bot size={isMobile ? 20 : 28} />
+              </div>
+              <div>
+                <h2 className="font-bold text-base leading-none">AI Assistant</h2>
+                <p className={`text-[8px] font-bold text-primary-light uppercase tracking-widest ${isMobile ? "mt-0.5" : "mt-1"}`}>Smart Cemetery</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-lg leading-none">AI Assistant</h2>
-              <p className="text-[10px] font-bold text-primary-light uppercase tracking-widest mt-1">
-                Smart Cemetery RAG Agent
-              </p>
-            </div>
+            <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/20 rounded-lg transition-colors"><ChevronDown size={20} /></button>
           </div>
 
-          {/* Messages */}
-          <div
-            ref={scrollRef}
-            className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral/30"
-          >
+          <div ref={scrollRef} className={`flex-1 ${isMobile ? "p-4" : "p-6"} overflow-y-auto space-y-4 bg-neutral/30`}>
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    m.role === "ai"
-                      ? "bg-primary/10 text-primary"
-                      : "bg-slate-200 text-slate-600"
-                  }`}
-                >
-                  {m.role === "ai" ? <Bot size={16} /> : <User size={16} />}
+              <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${m.role === "ai" ? "bg-primary/10 text-primary" : "bg-slate-200 text-slate-600"}`}>
+                  {m.role === "ai" ? <Bot size={14} /> : <User size={14} />}
                 </div>
-                <div
-                  className={`max-w-[85%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${
-                    m.role === "ai"
-                      ? "bg-white text-slate-800 rounded-tl-none border border-slate-50"
-                      : "bg-primary text-white rounded-tr-none"
-                  }`}
-                >
+                <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm text-sm leading-relaxed ${m.role === "ai" ? "bg-white text-slate-800 rounded-tl-none border border-slate-50" : "bg-primary text-white rounded-tr-none"}`}>
                   {m.content}
                 </div>
               </div>
             ))}
             {loading && (
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <Bot size={16} />
-                </div>
-                <div className="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-3 border border-slate-50">
-                  <Loader2 size={16} className="animate-spin text-primary" />
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">
-                    Berpikir...
-                  </p>
+              <div className="flex gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Bot size={14} /></div>
+                <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2 border border-slate-50">
+                  <Loader2 size={14} className="animate-spin text-primary" />
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">Berpikir...</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Input */}
-          <div className="p-6 bg-white border-t border-slate-100">
-            <div className="flex gap-2 p-1 bg-neutral rounded-2xl border border-slate-100 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="Tanyakan sesuatu..."
-                className="flex-1 px-4 py-2.5 bg-transparent outline-none text-sm text-slate-800"
-              />
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || loading}
-                className="p-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition-all disabled:opacity-50"
-              >
-                <Send size={18} />
-              </button>
+          <div className={`${isMobile ? "p-3" : "p-6"} bg-white border-t border-slate-100`}>
+            <div className={`flex gap-1 ${isMobile ? "p-1" : "p-1 bg-neutral rounded-2xl border border-slate-100"} focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all`}>
+              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} placeholder="Tanyakan..." className={`flex-1 ${isMobile ? "px-3 py-2 text-sm" : "px-4 py-2.5 text-sm"} bg-transparent outline-none text-slate-800`} />
+              <button onClick={handleSend} disabled={!input.trim() || loading} className={`${isMobile ? "p-2" : "p-2.5"} bg-primary text-white rounded-xl hover:bg-primary-dark transition-all disabled:opacity-50`}><Send size={16} /></button>
             </div>
-            <p className="text-[9px] text-slate-400 text-center mt-4 font-bold uppercase tracking-tighter">
-              Ditenagai oleh Model Nvidia AI & Smart Cemetery Data
-            </p>
           </div>
         </div>
       )}
