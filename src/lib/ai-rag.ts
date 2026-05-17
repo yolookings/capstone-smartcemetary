@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CHUNKS_FILE = path.join(__dirname, "../../rag_chunks.json");
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL_NAME = "nvidia/llama-3.1-nemotron-70b-instruct:free";
+const MODEL_NAME = process.env.AI_MODEL || "nvidia/llama-3.1-nemotron-70b-instruct:free";
 
 let cachedChunks: string[] = [];
 
@@ -59,6 +59,9 @@ Gunakan konteks dari peraturan Perda yang diberikan untuk menjawab. Jangan buat 
 ${context}`;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
     const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
@@ -74,9 +77,24 @@ ${context}`;
         temperature: 0.3,
         max_tokens: 1024,
       }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("OpenRouter API error:", response.status, errorData);
+      return `Maaf, layanan AI sedang sibuk (${response.status}). Silakan coba lagi sebentar.`;
+    }
+
     const data = await response.json();
+    
+    if (data.error) {
+      console.error("OpenRouter error:", data.error);
+      return `Maaf, terjadi kesalahan: ${data.error.message || "Unknown error"}`;
+    }
+
     const aiResponse =
       data.choices?.[0]?.message?.content ||
       "Maaf, saya terlalu lama merespon. Cobain lagi.";

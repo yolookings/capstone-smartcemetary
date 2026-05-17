@@ -3,6 +3,7 @@ import { Manrope, Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import Header from "@/components/header";
+import Footer from "@/components/footer";
 import ChatWidget from "@/components/chat-widget";
 
 const manrope = Manrope({
@@ -33,11 +34,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${manrope.variable} ${inter.variable} antialiased min-h-screen font-inter bg-neutral text-slate-900`}
+        className={`${manrope.variable} ${inter.variable} antialiased min-h-screen font-inter bg-neutral text-slate-900 flex flex-col`}
       >
         <Providers>
           <Header />
-          <main>{children}</main>
+          <main className="flex-1 pb-24 lg:pb-32">{children}</main>
+          <Footer />
           <ChatWidget />
         </Providers>
       </body>
