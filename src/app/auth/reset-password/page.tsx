@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
 import { Lock, Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
@@ -14,27 +14,53 @@ function ResetPasswordContent() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [tokenError, setTokenError] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
-    // Check if there's an access token in the URL hash (from Supabase reset password)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get("access_token");
-    const type = hashParams.get("type");
+    const processToken = async () => {
+      // Check URL hash first (Supabase default)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      let accessToken = hashParams.get("access_token");
+      let refreshToken = hashParams.get("refresh_token");
+      let type = hashParams.get("type");
 
-    if (accessToken && type === "recovery") {
-      // Set the session from the token
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: hashParams.get("refresh_token") || "",
-      }).then(() => {
-        setIsReady(true);
-      });
-    } else {
-      setError("Link reset password tidak valid atau sudah kedaluwarsa");
-    }
+      // If not in hash, check query params (some Supabase configs use this)
+      if (!accessToken) {
+        const queryParams = new URLSearchParams(window.location.search);
+        accessToken = queryParams.get("access_token") || queryParams.get("token");
+        refreshToken = queryParams.get("refresh_token") || queryParams.get("refresh_token");
+        type = queryParams.get("type") || queryParams.get("token_type");
+      }
+
+      if (accessToken && (type === "recovery" || type === "password_recovery" || !type)) {
+        try {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || "",
+          });
+
+          if (sessionError) {
+            console.error("Session error:", sessionError);
+            setTokenError(true);
+            setError("Link reset password sudah kedaluwarsa. Silakan minta link baru.");
+          } else {
+            setIsReady(true);
+          }
+        } catch (err) {
+          console.error("Token processing error:", err);
+          setTokenError(true);
+          setError("Link reset password tidak valid atau sudah kedaluwarsa");
+        }
+      } else {
+        setTokenError(true);
+        setError("Link reset password tidak valid atau sudah kedaluwarsa. Silakan minta link baru di halaman login.");
+      }
+    };
+
+    processToken();
   }, [supabase]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -100,9 +126,16 @@ function ResetPasswordContent() {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg mb-4">
-            <AlertCircle size={16} />
-            {error}
+          <div className="flex flex-col gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg mb-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={16} />
+              {error}
+            </div>
+            {tokenError && (
+              <Link href="/auth/login?forgot=1" className="text-emerald-600 hover:underline text-center mt-2">
+                Klik di sini untuk minta link reset password baru
+              </Link>
+            )}
           </div>
         )}
 

@@ -191,25 +191,24 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-        <p className="text-slate-500">Memuat data...</p>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] p-8">
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 max-w-md text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <WifiOff className="text-red-500" size={40} />
+      <div className="flex flex-col items-center justify-center h-96 p-8">
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-12 max-w-md text-center">
+          <div className="w-24 h-24 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
+            <WifiOff className="text-red-500" size={48} />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Tidak Terhubung</h2>
-          <p className="text-slate-500 mb-6">{error}</p>
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">Tidak Terhubung</h2>
+          <p className="text-slate-500 mb-8">{error}</p>
           <button
             onClick={() => fetchData(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
+            className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all flex items-center gap-2 shadow-lg shadow-primary/20 mx-auto"
           >
             <RefreshCw size={18} />
             Coba Lagi
@@ -227,33 +226,24 @@ export default function AdminDashboardPage() {
     ? Math.round(((stats.occupiedMakam + stats.reservedMakam) / stats.totalMakam) * 100) 
     : 0;
 
-  return (
-    <div className="p-8 space-y-8">
+return (
+    <div className="space-y-8 pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard Admin</h1>
-          <p className="text-slate-500 text-sm mt-1">Selamat datang, {profile?.full_name || 'Admin'}</p>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Dashboard Admin</h1>
+          <p className="text-secondary text-sm mt-2">Selamat datang, {profile?.full_name || 'Admin'}</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-            connectionStatus === 'connected' 
-              ? 'bg-emerald-100 text-emerald-700' 
-              : 'bg-red-100 text-red-700'
-          }`}>
-            {connectionStatus === 'connected' ? <Wifi size={14} /> : <WifiOff size={14} />}
-            {connectionStatus === 'connected' ? 'Terhubung' : 'Terputus'}
-          </div>
-          <button
-            onClick={() => fetchData(true)}
-            disabled={refreshing}
-            className="p-2.5 bg-white rounded-xl border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition-all disabled:opacity-50"
-          >
-            <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-          </button>
-        </div>
+        <button
+          onClick={() => fetchData(true)}
+          disabled={refreshing}
+          className="bg-white px-6 py-3 rounded-xl font-bold border border-slate-200 text-slate-600 hover:text-primary hover:border-primary transition-all flex items-center gap-2 shadow-sm"
+        >
+          <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+          Refresh
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-4 gap-6">
         <StatCard 
           label="Total Pengajuan" 
           value={stats.totalPengajuan} 
@@ -317,74 +307,76 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                <Clock className="text-amber-500" size={20} />
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="font-bold text-xl text-slate-900 flex items-center gap-3">
+                <Clock className="text-amber-500" size={24} />
                 Pengajuan Menunggu Validasi
               </h3>
-              <Link href="/dashboard/admin/pengajuan" className="text-sm text-emerald-600 font-medium hover:underline flex items-center gap-1">
+              <Link href="/dashboard/admin/pengajuan" className="text-sm font-bold text-primary uppercase tracking-widest hover:underline flex items-center gap-1">
                 Lihat Semua <ArrowRight size={14} />
               </Link>
             </div>
             
             {pendingPengajuan.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {pendingPengajuan.map((p: any) => (
                   <Link
                     key={p.id}
                     href={`/dashboard/admin/pengajuan/${p.id}`}
-                    className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors"
+                    className="flex items-center justify-between p-6 bg-neutral rounded-2xl hover:bg-slate-100 transition-all"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                        <Clock className="text-amber-600" size={18} />
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                        <Clock className="text-amber-600" size={20} />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{p.profiles?.full_name || 'Unknown'}</p>
-                        <p className="text-xs text-slate-500">{p.profiles?.email}</p>
+                        <p className="text-sm font-bold text-slate-900">{p.profiles?.full_name || 'Unknown'}</p>
+                        <p className="text-xs text-slate-400 font-medium">{p.profiles?.email}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs text-slate-400">
-                        {new Date(p.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      <span className="text-xs text-slate-400 font-medium uppercase tracking-widest">
+                        {new Date(p.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
-                      <p className="text-xs text-amber-600 font-medium mt-0.5">Menunggu</p>
+                      <p className="text-xs text-amber-600 font-bold mt-1 uppercase tracking-wider">Menunggu</p>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="text-emerald-500" size={32} />
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="text-primary" size={40} />
                 </div>
-                <p className="text-slate-500 font-medium">Semua pengajuan sudah diproses</p>
-                <p className="text-slate-400 text-sm">Tidak ada yang menunggu validasi</p>
+                <p className="text-slate-600 font-bold">Semua pengajuan sudah diproses</p>
+                <p className="text-slate-400 text-sm mt-1">Tidak ada yang menunggu validasi</p>
               </div>
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                <Activity className="text-blue-500" size={20} />
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="font-bold text-xl text-slate-900 flex items-center gap-3">
+                <Activity className="text-blue-500" size={24} />
                 Aktivitas Terbaru
               </h3>
             </div>
             
             {recentPengajuan.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {recentPengajuan.map((p: any) => (
-                  <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                    {getActivityIcon('pengajuan')}
+                  <div key={p.id} className="flex items-center gap-4 p-4 hover:bg-neutral rounded-2xl transition-all">
+                    <div className="w-10 h-10 bg-neutral rounded-xl flex items-center justify-center">
+                      {getActivityIcon('pengajuan')}
+                    </div>
                     <div className="flex-1">
                       <p className="text-sm text-slate-800">
-                        Pengajuan baru dari <span className="font-medium">{p.profiles?.full_name || 'Unknown'}</span>
+                        Pengajuan baru dari <span className="font-bold">{p.profiles?.full_name || 'Unknown'}</span>
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">
                         {new Date(p.created_at).toLocaleDateString('id-ID', { 
                           day: 'numeric', 
                           month: 'short',
@@ -398,52 +390,52 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="text-slate-300" size={32} />
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-neutral rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <FileText className="text-slate-300" size={40} />
                 </div>
-                <p className="text-slate-500 font-medium">Belum ada aktivitas</p>
-                <p className="text-slate-400 text-sm">Aktivitas akan muncul di sini</p>
+                <p className="text-slate-600 font-bold">Belum ada aktivitas</p>
+                <p className="text-slate-400 text-sm mt-1">Aktivitas akan muncul di sini</p>
               </div>
             )}
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h3 className="font-bold text-slate-900 text-lg mb-6 flex items-center gap-2">
-              <TrendingUp className="text-emerald-500" size={20} />
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8">
+            <h3 className="font-bold text-xl text-slate-900 mb-8 flex items-center gap-3">
+              <TrendingUp className="text-primary" size={24} />
               Statistik Cepat
             </h3>
             
-            <div className="space-y-4">
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-500">Total Makam</span>
-                  <span className="text-2xl font-bold text-slate-900">{stats.totalMakam}</span>
+            <div className="space-y-6">
+              <div className="p-6 bg-neutral rounded-2xl">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Makam</span>
+                  <span className="text-3xl font-bold text-slate-900">{stats.totalMakam}</span>
                 </div>
-                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '100%' }}></div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-500">Tingkat Approval</span>
-                  <span className="text-2xl font-bold text-emerald-600">{approvalRate}%</span>
-                </div>
-                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${approvalRate}%` }}></div>
+                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full" style={{ width: '100%' }}></div>
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-500">Pengakaian Makam</span>
-                  <span className="text-2xl font-bold text-amber-600">{occupancyRate}%</span>
+              <div className="p-6 bg-neutral rounded-2xl">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tingkat Approval</span>
+                  <span className="text-3xl font-bold text-primary">{approvalRate}%</span>
                 </div>
-                <div className="h-2 bg-slate-200 rounded-full overflow-hidden flex">
-                  <div className="h-full bg-emerald-500" style={{ width: `${stats.availableMakam / stats.totalMakam * 100 || 0}%` }}></div>
+                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full" style={{ width: `${approvalRate}%` }}></div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-neutral rounded-2xl">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Pengunaan Makam</span>
+                  <span className="text-3xl font-bold text-amber-600">{occupancyRate}%</span>
+                </div>
+                <div className="h-3 bg-slate-100 rounded-full overflow-hidden flex">
+                  <div className="h-full bg-primary" style={{ width: `${stats.availableMakam / stats.totalMakam * 100 || 0}%` }}></div>
                   <div className="h-full bg-amber-500" style={{ width: `${stats.reservedMakam / stats.totalMakam * 100 || 0}%` }}></div>
                   <div className="h-full bg-rose-500" style={{ width: `${stats.occupiedMakam / stats.totalMakam * 100 || 0}%` }}></div>
                 </div>
@@ -451,28 +443,28 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white">
-            <h3 className="font-bold text-lg mb-4">Aksi Cepat</h3>
+          <div className="bg-gradient-to-br from-primary to-emerald-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-primary/20">
+            <h3 className="font-bold text-xl mb-6">Aksi Cepat</h3>
             <div className="space-y-3">
               <Link
                 href="/dashboard/admin/pengajuan"
-                className="flex items-center justify-between p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
+                className="flex items-center justify-between p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
               >
-                <span className="text-sm font-medium">Validasi Pengajuan</span>
+                <span className="text-sm font-bold">Validasi Pengajuan</span>
                 <ArrowRight size={18} />
               </Link>
               <Link
                 href="/dashboard/admin/makam"
-                className="flex items-center justify-between p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
+                className="flex items-center justify-between p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
               >
-                <span className="text-sm font-medium">Kelola Makam</span>
+                <span className="text-sm font-bold">Kelola Makam</span>
                 <ArrowRight size={18} />
               </Link>
               <Link
                 href="/dashboard/admin/cemetery"
-                className="flex items-center justify-between p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
+                className="flex items-center justify-between p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all"
               >
-                <span className="text-sm font-medium">Monitoring Makam</span>
+                <span className="text-sm font-bold">Monitoring Makam</span>
                 <ArrowRight size={18} />
               </Link>
             </div>
@@ -485,42 +477,42 @@ export default function AdminDashboardPage() {
 
 function StatCard({ label, value, icon, href, color }: { label: string; value: number; icon: React.ReactNode; href: string; color: string }) {
   const colorMap: Record<string, string> = {
-    blue: 'border-blue-200 bg-blue-50',
-    amber: 'border-amber-200 bg-amber-50',
-    emerald: 'border-emerald-200 bg-emerald-50',
-    purple: 'border-purple-200 bg-purple-50',
+    blue: 'bg-blue-50 text-blue-600',
+    amber: 'bg-amber-50 text-amber-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    purple: 'bg-purple-50 text-purple-600',
   };
   
   return (
     <Link 
       href={href}
-      className={`p-5 rounded-2xl border-2 bg-white hover:border-emerald-300 hover:shadow-md transition-all`}
+      className="bg-white p-6 rounded-xl border shadow-sm hover:shadow-xl transition-all group"
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</span>
-        <div className="opacity-60">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorMap[color]}`}>
           {icon}
         </div>
       </div>
       <p className="text-3xl font-bold text-slate-900">{value}</p>
+      <p className="text-sm text-slate-500 mt-1">{label}</p>
     </Link>
   );
 }
 
 function MiniStat({ label, value, color }: { label: string; value: number | string; color: string }) {
   const colorMap: Record<string, string> = {
-    emerald: 'bg-emerald-100 text-emerald-700',
-    amber: 'bg-amber-100 text-amber-700',
-    rose: 'bg-rose-100 text-rose-700',
-    orange: 'bg-orange-100 text-orange-700',
-    slate: 'bg-slate-100 text-slate-700',
-    blue: 'bg-blue-100 text-blue-700',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    amber: 'bg-amber-50 text-amber-600',
+    rose: 'bg-rose-50 text-rose-600',
+    orange: 'bg-orange-50 text-orange-600',
+    slate: 'bg-slate-50 text-slate-600',
+    blue: 'bg-blue-50 text-blue-600',
   };
   
   return (
-    <div className={`p-4 rounded-xl ${colorMap[color]}`}>
+    <div className={`p-4 rounded-xl border border-slate-100 ${colorMap[color]}`}>
       <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs font-medium opacity-80">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wider opacity-70">{label}</p>
     </div>
   );
 }

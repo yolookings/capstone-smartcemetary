@@ -168,7 +168,7 @@ export default function AdminPengaturanPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -181,7 +181,7 @@ export default function AdminPengaturanPage() {
           <p className="text-slate-600 font-medium">{error}</p>
           <button
             onClick={fetchProfile}
-            className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg"
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg"
           >
             Coba Lagi
           </button>
@@ -191,9 +191,9 @@ export default function AdminPengaturanPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 max-w-2xl mx-auto">
+    <div className="p-4 space-y-4 w-full max-w-2xl">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Pengaturan Akun</h1>
+        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Pengaturan Akun</h1>
         <p className="text-slate-500 text-sm mt-1">Kelola informasi akun Anda</p>
       </div>
 
@@ -265,7 +265,7 @@ export default function AdminPengaturanPage() {
           <button
             onClick={handleSaveProfile}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
           >
             {saving ? (
               <>

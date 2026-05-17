@@ -126,7 +126,7 @@ export default function AdminMakamPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function AdminMakamPage() {
           <p className="text-slate-600 font-medium">{error}</p>
           <button
             onClick={fetchMakam}
-            className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg"
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg"
           >
             Coba Lagi
           </button>
@@ -152,7 +152,7 @@ export default function AdminMakamPage() {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Kelola Makam</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Kelola Makam</h1>
           <p className="text-slate-500 text-sm mt-1">
             Kelola semua data makam dan lokasi
           </p>

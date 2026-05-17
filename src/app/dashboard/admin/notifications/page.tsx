@@ -102,7 +102,7 @@ export default function AdminNotificationsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-80px)] space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         <p className="text-slate-500">Memuat notifikasi...</p>
       </div>
     );
@@ -119,7 +119,7 @@ export default function AdminNotificationsPage() {
           <p className="text-slate-500 mb-6">{error}</p>
           <button
             onClick={() => fetchData(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
           >
             <RefreshCw size={18} />
             Coba Lagi
@@ -133,7 +133,7 @@ export default function AdminNotificationsPage() {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Notifikasi</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Notifikasi</h1>
           <p className="text-slate-500 text-sm mt-1">
             {unreadCount > 0 
               ? `${unreadCount} notifikasi belum dibaca` 
@@ -164,7 +164,7 @@ export default function AdminNotificationsPage() {
           onClick={() => setFilter('all')}
           className={`px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
             filter === 'all' 
-              ? 'bg-emerald-600 text-white' 
+              ? 'bg-primary text-white' 
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
@@ -174,7 +174,7 @@ export default function AdminNotificationsPage() {
           onClick={() => setFilter('unread')}
           className={`px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
             filter === 'unread' 
-              ? 'bg-emerald-600 text-white' 
+              ? 'bg-primary text-white' 
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
@@ -184,7 +184,7 @@ export default function AdminNotificationsPage() {
           onClick={() => setFilter('read')}
           className={`px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
             filter === 'read' 
-              ? 'bg-emerald-600 text-white' 
+              ? 'bg-primary text-white' 
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >

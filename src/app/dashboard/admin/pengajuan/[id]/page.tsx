@@ -236,7 +236,7 @@ export default function PengajuanDetailPage({ params }: Props) {
   );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-20">
+    <div className="w-full space-y-4 pb-10">
       <div className="flex items-center gap-4">
         <Link href="/dashboard/admin" className="p-2.5 bg-white rounded-xl border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition-all shadow-sm">
           <ArrowLeft size={20} />
