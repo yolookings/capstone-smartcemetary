@@ -162,6 +162,14 @@ const userId = user.id;
       relationship: makam?.relationship || "N/A"
     }).catch(err => console.error("[TELEGRAM] Notification failed:", err));
 
+    await dbInsert('notifications', {
+      type: 'revision',
+      title: 'Pengajuan Direvisi',
+      message: `Pengajuan direvisi oleh ${makam?.applicant_name || "N/A"}`,
+      user_id: userId,
+      pengajuan_id: pengajuanId,
+    });
+
     return NextResponse.json({ message: "Dokumen revisi berhasil dikirim", id: pengajuanId });
   } catch (error: any) {
     console.error("Revision submit error:", error.message || error);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/browser";
 import Link from "next/link";
 import { 
   FileText, Clock, CheckCircle, XCircle, AlertCircle, Users, MapPin, 
@@ -56,7 +57,7 @@ export default function AdminDashboardPage() {
     rejectedCount: 0,
     revisionCount: 0
   });
-  const [profile, setProfile] = useState<{ full_name: string } | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string; username: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
 
@@ -64,13 +65,13 @@ export default function AdminDashboardPage() {
     if (isRefresh) setRefreshing(true);
     setError(null);
     setConnectionStatus('checking');
-    
+
     try {
       const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
       if (!SUPABASE_URL || !SUPABASE_KEY) {
-        setError("Konfigurasi Supabase tidak ditemukan. Silakan periksa file .env.local");
+        setError("Konfigurasi Supabase tidak ditemukan. Pastikan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY ada di .env.local");
         setConnectionStatus('disconnected');
         setLoading(false);
         setRefreshing(false);
@@ -82,26 +83,25 @@ export default function AdminDashboardPage() {
         'Authorization': `Bearer ${SUPABASE_KEY}`,
       };
 
-      const [pengajuanRes, profilesRes, makamRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/pengajuan?select=*&order=created_at.desc`, { headers }),
-        fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,full_name,email`, { headers }),
-        fetch(`${SUPABASE_URL}/rest/v1/makam?select=id,status`, { headers }),
-      ]);
+      const profilesRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,username,full_name`, { headers });
+      const pengajuanRes = await fetch(`${SUPABASE_URL}/rest/v1/pengajuan?select=*&order=created_at.desc`, { headers });
+      const makamRes = await fetch(`${SUPABASE_URL}/rest/v1/makam?select=id,status`, { headers });
 
-      if (!pengajuanRes.ok) {
-        setError(`Gagal mengambil data pengajuan. Status: ${pengajuanRes.status}`);
+      if (!profilesRes.ok || !pengajuanRes.ok || !makamRes.ok) {
+        const statuses = `${profilesRes.status}, ${pengajuanRes.status}, ${makamRes.status}`;
+        setError(`Tidak dapat mengambil data dari Supabase. Status: ${statuses}`);
         setConnectionStatus('disconnected');
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      const pengajuanData = await pengajuanRes.json();
       const profilesData = await profilesRes.json();
+      const pengajuanData = await pengajuanRes.json();
       const makamData = await makamRes.json();
 
       if (!Array.isArray(pengajuanData)) {
-        setError("Format data tidak valid dari server");
+        setError("Format data tidak valid dari server Supabase");
         setConnectionStatus('disconnected');
         setLoading(false);
         setRefreshing(false);
@@ -110,13 +110,13 @@ export default function AdminDashboardPage() {
 
       setConnectionStatus('connected');
 
-      const currentUserRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { 'apikey': SUPABASE_KEY } });
-      const userData = await currentUserRes.json();
-      const user = userData?.data?.user;
-      
-      if (user && Array.isArray(profilesData)) {
-        const myProfile = profilesData.find((p: any) => p.id === user.id);
-        if (myProfile) setProfile(myProfile);
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const profileData = profilesData.find((p: any) => p.id === user.id);
+        if (profileData) {
+          setProfile(profileData);
+        }
       }
 
       const userIds = [...new Set(pengajuanData.map((p: any) => p.user_id).filter((id: unknown): id is string => typeof id === 'string'))];
@@ -231,7 +231,7 @@ return (
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Dashboard Admin</h1>
-          <p className="text-secondary text-sm mt-2">Selamat datang, {profile?.full_name || 'Admin'}</p>
+          <p className="text-secondary text-sm mt-2">Welcome, Admin {profile?.username ? `@${profile.username}` : profile?.full_name || ''}</p>
         </div>
         <button
           onClick={() => fetchData(true)}
