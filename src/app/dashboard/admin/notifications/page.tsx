@@ -38,7 +38,13 @@ export default function AdminNotificationsPage() {
 
       await new Promise(resolve => setTimeout(resolve, 300));
       setConnectionStatus('connected');
-      setNotifications([]);
+      
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/notifications?order=created_at.desc&limit=100`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      );
+      const data = await res.json();
+      setNotifications(Array.isArray(data) ? data : []);
       setLoading(false);
       setRefreshing(false);
     } catch (err) {
@@ -61,7 +67,15 @@ export default function AdminNotificationsPage() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_KEY!, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify({ read: true }),
+    });
     setNotifications(notifications.map(n => 
       n.id === id ? { ...n, read: true } : n
     ));
@@ -71,7 +85,14 @@ export default function AdminNotificationsPage() {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
-  const deleteNotification = (id: string) => {
+  const deleteNotification = async (id: string) => {
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY!, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    });
     setNotifications(notifications.filter(n => n.id !== id));
   };
 

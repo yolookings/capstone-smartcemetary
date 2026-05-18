@@ -132,6 +132,14 @@ export async function POST(req: Request) {
       relationship
     }).catch(err => console.error("[TELEGRAM] Notification failed:", err));
 
+    await dbInsert('notifications', {
+      type: 'pengajuan',
+      title: 'Pengajuan Baru',
+      message: `Pengajuan baru dari ${applicantName}. NIK: ${nik}`,
+      user_id: userId,
+      pengajuan_id: pengajuanId,
+    });
+
     const userPhone = profile?.phone;
     if (userPhone) {
       notifyUserSubmissionConfirmation({

@@ -95,6 +95,24 @@ export async function cleanupAndInitDb() {
       );
     `);
 
+    // Notifications table for admin alerts
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        type TEXT NOT NULL CHECK (type IN ('pengajuan', 'revision', 'approved', 'rejected', 'system')),
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        read BOOLEAN DEFAULT FALSE,
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        pengajuan_id UUID REFERENCES pengajuan(id) ON DELETE SET NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Indexes for notifications
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);`);
+
     // Chat sessions table for chatbot history
     await client.query(`
       CREATE TABLE IF NOT EXISTS chat_sessions (
