@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Shield, LayoutDashboard, FileText, Users, MapPin, BarChart3, Settings, Bell, LogOut, Menu, X } from "lucide-react";
+import { Shield, LayoutDashboard, FileText, Users, MapPin, BarChart3, Bell, Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 
 interface NavItem {
@@ -21,9 +21,7 @@ const menuItems: NavItem[] = [
   { href: "/dashboard/admin/notifications", label: "Notifikasi", icon: <Bell size={20} /> },
 ];
 
-const bottomMenuItems: NavItem[] = [
-  { href: "/dashboard/admin/pengaturan", label: "Pengaturan", icon: <Settings size={20} /> },
-];
+const bottomMenuItems: NavItem[] = [];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -86,11 +84,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return pathname.startsWith(href);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace('/auth/login');
-  };
-
   const NavContent = ({ vertical = false }: { vertical?: boolean }) => (
     <>
       <nav className={`flex-1 py-4 ${vertical ? 'px-4' : 'px-3'} space-y-1 overflow-y-auto`}>
@@ -125,23 +118,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span>{item.label}</span>
           </Link>
         ))}
-        
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 w-full transition-all"
-        >
-          <LogOut size={20} className="flex-shrink-0" />
-          <span>Logout</span>
-        </button>
-        
-        {profile && (
-          <div className="mt-3 px-4 py-3 bg-neutral rounded-xl">
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Logged in as</p>
-            <p className="text-sm font-bold text-slate-800">
-              {profile.username ? `@${profile.username}` : profile.full_name}
-            </p>
-          </div>
-        )}
       </div>
     </>
   );

@@ -276,18 +276,24 @@ export default function PengajuanDetailPage({ params }: Props) {
                 </div>
                 <h3 className="font-bold text-slate-900">Data Almarhum</h3>
               </div>
-              <div className="space-y-3">
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Nama</p>
-                  <p className="text-slate-800 font-medium">{pengajuan.makam?.deceased_name || '-'}</p>
+                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Nama Almarhum/ah</p>
+                  <p className="text-slate-800 font-bold text-lg">{pengajuan.makam?.deceased_name || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Tanggal Wafat</p>
-                  <p className="text-slate-800 font-medium">
-                    {pengajuan.makam?.deceased_date 
-                      ? new Date(pengajuan.makam.deceased_date).toLocaleDateString('id-ID')
-                      : '-'}
-                  </p>
+                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">NIK (Nomor Induk Kependudukan)</p>
+                  <p className="text-slate-800 font-bold text-lg">{pengajuan.makam?.nik || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Tanggal Wafat</p>
+                  <p className="text-slate-800 font-bold">{pengajuan.makam?.deceased_date 
+                    ? new Date(pengajuan.makam.deceased_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                    : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Hubungan Dengan Almarhum</p>
+                  <p className="text-slate-800 font-bold">{pengajuan.makam?.relationship || '-'}</p>
                 </div>
               </div>
             </div>

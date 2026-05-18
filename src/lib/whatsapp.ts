@@ -1,5 +1,5 @@
 const FONNTE_API_URL = "https://api.fonnte.com/send";
-const DASHBOARD_URL = "https://capstone-smartcemetary-git-feature-notification-mwlanaz.vercel.app";
+const DASHBOARD_URL = "https://capstone-smartcemetary.vercel.app/";
 
 export function normalizePhone(phone: string): string {
   if (!phone) return "";
@@ -29,31 +29,31 @@ export async function sendWhatsAppMessage(
     typing?: boolean;
     url?: string;
     filename?: string;
-  }
+  },
 ): Promise<{ success: boolean; error?: string; response?: any }> {
   const token = process.env.FONNTE_TOKEN;
-  
+
   if (!token) {
     console.error("[WA] FONNTE_TOKEN not configured");
     return { success: false, error: "FONNTE_TOKEN not configured" };
   }
-  
+
   if (!target || !message) {
     return { success: false, error: "Target and message are required" };
   }
-  
+
   const normalizedTarget = normalizePhone(target);
-  
+
   if (!isValidPhone(normalizedTarget)) {
     console.error("[WA] Invalid phone:", target);
     return { success: false, error: `Invalid phone number: ${target}` };
   }
-  
+
   try {
     const formData = new URLSearchParams();
     formData.append("target", normalizedTarget);
     formData.append("message", message);
-    
+
     if (options?.delay) {
       formData.append("delay", options.delay);
     }
@@ -66,7 +66,7 @@ export async function sendWhatsAppMessage(
     if (options?.filename) {
       formData.append("filename", options.filename);
     }
-    
+
     const response = await fetch(FONNTE_API_URL, {
       method: "POST",
       headers: {
@@ -75,23 +75,37 @@ export async function sendWhatsAppMessage(
       },
       body: formData.toString(),
     });
-    
+
     const result = await response.json();
-    
-    console.log("[WA] Send result:", { target: normalizedTarget, status: result.status, id: result.id });
-    
+
+    console.log("[WA] Send result:", {
+      target: normalizedTarget,
+      status: result.status,
+      id: result.id,
+    });
+
     if (response.ok && result.status === true) {
       return { success: true, response: result };
     }
-    
-    return { success: false, error: result.message || "Failed", response: result };
+
+    return {
+      success: false,
+      error: result.message || "Failed",
+      response: result,
+    };
   } catch (error) {
     console.error("[WA] Error:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
 
-export function buildNewSubmissionMessage(data: { applicantName: string; deceasedName: string }): string {
+export function buildNewSubmissionMessage(data: {
+  applicantName: string;
+  deceasedName: string;
+}): string {
   return `[E-Makam Notification]
 
 Ada pengajuan baru yang menunggu verifikasi.
@@ -103,7 +117,10 @@ Status        : Menunggu Verifikasi
 Silakan login ke dashboard E-Makam untuk memverifikasi dokumen.`;
 }
 
-export function buildRevisionResubmissionMessage(data: { applicantName: string; deceasedName: string }): string {
+export function buildRevisionResubmissionMessage(data: {
+  applicantName: string;
+  deceasedName: string;
+}): string {
   return `[E-Makam Notification]
 
 Dokumen revisi telah diunggah ulang.
@@ -177,7 +194,10 @@ export async function notifyAdminNewSubmission(data: {
 }) {
   return sendWhatsAppMessage(
     data.adminPhone,
-    buildNewSubmissionMessage({ applicantName: data.applicantName, deceasedName: data.deceasedName })
+    buildNewSubmissionMessage({
+      applicantName: data.applicantName,
+      deceasedName: data.deceasedName,
+    }),
   );
 }
 
@@ -188,7 +208,10 @@ export async function notifyAdminRevisionResubmission(data: {
 }) {
   return sendWhatsAppMessage(
     data.adminPhone,
-    buildRevisionResubmissionMessage({ applicantName: data.applicantName, deceasedName: data.deceasedName })
+    buildRevisionResubmissionMessage({
+      applicantName: data.applicantName,
+      deceasedName: data.deceasedName,
+    }),
   );
 }
 
@@ -203,11 +226,27 @@ export async function notifyUserStatusChange(data: {
   console.log("[WA] notifyUserStatusChange called:", data);
   switch (data.status) {
     case "APPROVED":
-      return sendWhatsAppMessage(data.userPhone, buildApprovedMessage({ pengajuanId: data.pengajuanId, blok: data.blok, nomor: data.nomor }));
+      return sendWhatsAppMessage(
+        data.userPhone,
+        buildApprovedMessage({
+          pengajuanId: data.pengajuanId,
+          blok: data.blok,
+          nomor: data.nomor,
+        }),
+      );
     case "NEED_REVISION":
-      return sendWhatsAppMessage(data.userPhone, buildRevisionNeededMessage({ pengajuanId: data.pengajuanId, revisionNote: data.revisionNote }));
+      return sendWhatsAppMessage(
+        data.userPhone,
+        buildRevisionNeededMessage({
+          pengajuanId: data.pengajuanId,
+          revisionNote: data.revisionNote,
+        }),
+      );
     case "REJECTED":
-      return sendWhatsAppMessage(data.userPhone, buildRejectedMessage({ pengajuanId: data.pengajuanId }));
+      return sendWhatsAppMessage(
+        data.userPhone,
+        buildRejectedMessage({ pengajuanId: data.pengajuanId }),
+      );
   }
 }
 
@@ -223,8 +262,8 @@ export async function notifyUserSubmissionConfirmation(data: {
     buildSubmissionConfirmation({
       pengajuanId: data.pengajuanId,
       applicantName: data.applicantName,
-      nik: data.nik
-    })
+      nik: data.nik,
+    }),
   );
 }
 

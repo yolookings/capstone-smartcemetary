@@ -24,6 +24,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    // Create profile record
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        id: data.user.id,
+        email: email.toLowerCase(),
+        full_name: name,
+        role: 'USER'
+      });
+
+    if (profileError) {
+      console.error("Profile creation error:", profileError.message);
+    }
+
     if (telegramChatId) {
       await supabaseAdmin
         .from('profiles')
