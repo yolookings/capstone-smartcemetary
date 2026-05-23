@@ -1,0 +1,59 @@
+name: Smart Cemetery CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install
+        run: npm install
+
+      - name: Lint
+        run: npm run lint || true
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+      - name: Security Audit
+        run: npm audit --audit-level=high || true
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke Test
+        run: test -d .next
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+          script: |
+            cd ~/capstone-smartcemetary
+            git pull origin ${{ github.ref_name }}
+            npm install
+            npm run build
+            pm2 restart smartcemetary
+            pm2 save
+            curl -f http://localhost:3000 || exit 1
