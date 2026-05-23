@@ -140,7 +140,7 @@ export default function BaruPengajuanPage() {
           <div className="w-full md:w-1/3 space-y-8">
             <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden group">
               <img
-                src="https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?auto=format&fit=crop&q=80&w=800"
+                src="/alur.png"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 alt="Nature"
               />
