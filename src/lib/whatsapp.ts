@@ -1,5 +1,5 @@
 const FONNTE_API_URL = "https://api.fonnte.com/send";
-const DASHBOARD_URL = "https://capstone-smartcemetary.vercel.app/";
+const DASHBOARD_URL = "https://smartcemetary.web.id/";
 
 export function normalizePhone(phone: string): string {
   if (!phone) return "";
