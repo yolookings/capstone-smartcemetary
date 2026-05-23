@@ -22,10 +22,11 @@ const siteUrl = "https://smartcemetary.web.id";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Smart Cemetery",
+  title: "Smart Cemetery Sistem Pemakaman Digital",
   description:
     "Sistem manajemen pemakaman digital modern — daftar makam online, verifikasi dokumen, monitoring lokasi, dan tracking status pengajuan secara real-time.",
   icons: [
+    { rel: "icon", url: "/logo-smartcemetary.svg", type: "image/svg+xml" },
     { rel: "icon", url: "/logo-smartcemetary.png", type: "image/png" },
     { rel: "shortcut icon", url: "/logo-smartcemetary.png", type: "image/png" },
   ],
