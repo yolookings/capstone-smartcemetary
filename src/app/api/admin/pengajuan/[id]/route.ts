@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { supabase_execute_sql } from "@/lib/supabase-query";
 import { notifyUserStatusChange } from "@/lib/whatsapp";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-async function dbUpdate(table: string, id: string, data: Record<string, any>) {
+async function dbUpdate(table: string, id: string, data: Record<string, unknown>) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method: 'PATCH',
     headers: {
@@ -131,7 +130,7 @@ export async function GET(
 
     const data = await res.json();
     return NextResponse.json(data[0] || null);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

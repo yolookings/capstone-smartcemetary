@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { uploadFile } from "@/lib/storage";
-import { getAdminTelegramIds, notifyAdminsNewSubmission } from "@/lib/telegram";
+import { notifyAdminsNewSubmission } from "@/lib/telegram";
 import { notifyUserSubmissionConfirmation } from "@/lib/whatsapp";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-async function dbInsert(table: string, data: Record<string, any>) {
+async function dbInsert(table: string, data: Record<string, unknown>) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: 'POST',
     headers: {
@@ -151,16 +151,17 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ message: "Pengajuan berhasil dikirim", id: pengajuanId });
-  } catch (error: any) {
-    console.error("Pengajuan error detail:", error.message || error);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Pengajuan error detail:", errorMessage);
     return NextResponse.json({ 
       error: "Internal Server Error", 
-      detail: error.message 
+      detail: errorMessage 
     }, { status: 500 });
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     const cookieStore = await cookies();
 
@@ -198,7 +199,8 @@ export async function GET(req: Request) {
     const pengajuans = await res.json();
 
     return NextResponse.json(pengajuans || []);
-  } catch (error: any) {
-    return NextResponse.json({ error: "Internal Server Error", detail: error.message }, { status: 500 });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: "Internal Server Error", detail: errorMessage }, { status: 500 });
   }
 }
