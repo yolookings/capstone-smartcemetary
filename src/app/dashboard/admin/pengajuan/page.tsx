@@ -72,7 +72,7 @@ export default function AdminPengajuanPage() {
       }
 
       const userIds = [...new Set(data.map((p: any) => p.user_id).filter(Boolean))];
-      let profilesMap: Record<string, {email: string, full_name: string}> = {};
+      const profilesMap: Record<string, {email: string, full_name: string}> = {};
       
       if (userIds.length > 0) {
         for (const userId of userIds) {

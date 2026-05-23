@@ -2,22 +2,14 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { uploadFile } from "@/lib/storage";
-import { getAdminTelegramIds, notifyAdminsRevisionResubmission } from "@/lib/telegram";
+import { notifyAdminsRevisionResubmission } from "@/lib/telegram";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-async function dbFetch(table: string, query: string) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-    },
-  });
-  return res.json();
-}
 
-async function dbUpdate(table: string, id: string, data: Record<string, any>) {
+
+async function dbUpdate(table: string, id: string, data: Record<string, unknown>) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method: 'PATCH',
     headers: {
@@ -37,7 +29,7 @@ async function dbUpdate(table: string, id: string, data: Record<string, any>) {
   return res.json();
 }
 
-async function dbInsert(table: string, data: Record<string, any>) {
+async function dbInsert(table: string, data: Record<string, unknown>) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: 'POST',
     headers: {
@@ -171,11 +163,12 @@ const userId = user.id;
     });
 
     return NextResponse.json({ message: "Dokumen revisi berhasil dikirim", id: pengajuanId });
-  } catch (error: any) {
-    console.error("Revision submit error:", error.message || error);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Revision submit error:", errorMessage);
     return NextResponse.json({ 
       error: "Internal Server Error", 
-      detail: error.message 
+      detail: errorMessage 
     }, { status: 500 });
   }
 }

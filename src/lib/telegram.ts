@@ -28,9 +28,9 @@ export async function sendTelegramMessage(
     parseMode?: "Markdown" | "HTML";
     disableWebPagePreview?: boolean;
     disableNotification?: boolean;
-    replyMarkup?: any;
+    replyMarkup?: unknown;
   }
-): Promise<{ success: boolean; error?: string; response?: any }> {
+): Promise<{ success: boolean; error?: string; response?: unknown }> {
   const token = getBotToken();
   
   if (!token) {

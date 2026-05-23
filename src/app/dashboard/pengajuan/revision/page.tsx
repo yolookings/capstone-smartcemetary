@@ -18,15 +18,7 @@ export default function RevisionPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    const id = searchParams.get("id");
-    if (id) {
-      setPengajuanId(id);
-      fetchPengajuan(id);
-    }
-  }, [searchParams]);
-
-  const fetchPengajuan = async (id: string) => {
+  async function fetchPengajuan(id: string) {
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -44,7 +36,15 @@ export default function RevisionPage() {
       setPengajuan(data[0]);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (id) {
+      setPengajuanId(id);
+      fetchPengajuan(id);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

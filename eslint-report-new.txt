@@ -1,0 +1,205 @@
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/api/chat/route.ts
+  41:9  warning  'identifierType' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/auth/register/page.tsx
+   36:9   warning  'router' is assigned a value but never used      @typescript-eslint/no-unused-vars
+   62:28  warning  'fetchError' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   69:14  warning  'err' is defined but never used                  @typescript-eslint/no-unused-vars
+  159:19  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/auth/reset-password/page.tsx
+  4:21  warning  'useSearchParams' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/cemetery/page.tsx
+   4:26  warning  'AlertCircle' is defined but never used  @typescript-eslint/no-unused-vars
+   4:80  warning  'LayoutGrid' is defined but never used   @typescript-eslint/no-unused-vars
+  76:14  warning  'err' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/laporan/page.tsx
+   4:68  warning  'Download' is defined but never used      @typescript-eslint/no-unused-vars
+  61:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  62:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  63:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  66:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  68:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  84:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/layout.tsx
+  28:10  warning  'profile' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/makam/page.tsx
+   4:26  warning  'Plus' is defined but never used      @typescript-eslint/no-unused-vars
+   4:45  warning  'Calendar' is defined but never used  @typescript-eslint/no-unused-vars
+   4:55  warning  'User' is defined but never used      @typescript-eslint/no-unused-vars
+   4:61  warning  'Edit' is defined but never used      @typescript-eslint/no-unused-vars
+   4:67  warning  'Trash2' is defined but never used    @typescript-eslint/no-unused-vars
+   4:75  warning  'Eye' is defined but never used       @typescript-eslint/no-unused-vars
+  60:14  warning  'err' is defined but never used       @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/notifications/page.tsx
+   4:98   warning  'Eye' is defined but never used   @typescript-eslint/no-unused-vars
+   4:103  warning  'Mail' is defined but never used  @typescript-eslint/no-unused-vars
+  50:14   warning  'err' is defined but never used   @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/page.tsx
+    7:33  warning  'XCircle' is defined but never used                     @typescript-eslint/no-unused-vars
+    7:42  warning  'AlertCircle' is defined but never used                 @typescript-eslint/no-unused-vars
+    8:3   warning  'BarChart3' is defined but never used                   @typescript-eslint/no-unused-vars
+    8:26  warning  'Eye' is defined but never used                         @typescript-eslint/no-unused-vars
+    8:42  warning  'Wifi' is defined but never used                        @typescript-eslint/no-unused-vars
+    9:3   warning  'Calendar' is defined but never used                    @typescript-eslint/no-unused-vars
+    9:23  warning  'Bell' is defined but never used                        @typescript-eslint/no-unused-vars
+    9:29  warning  'MessageCircle' is defined but never used               @typescript-eslint/no-unused-vars
+   36:11  warning  'RecentActivity' is defined but never used              @typescript-eslint/no-unused-vars
+   62:10  warning  'connectionStatus' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  116:51  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  122:57  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  123:11  error    'profilesMap' is never reassigned. Use 'const' instead  prefer-const
+  132:42  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  137:50  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  144:52  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  145:53  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  146:53  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  147:53  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  149:51  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  150:50  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  151:50  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  168:14  warning  'err' is defined but never used                         @typescript-eslint/no-unused-vars
+  181:53  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  325:43  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  370:42  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/pengajuan/[id]/page.tsx
+    6:109  warning  'Send' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+   47:9    warning  'router' is assigned a value but never used                                                                  @typescript-eslint/no-unused-vars
+   53:10   warning  'selectedDoc' is assigned a value but never used                                                             @typescript-eslint/no-unused-vars
+   53:23   warning  'setSelectedDoc' is assigned a value but never used                                                          @typescript-eslint/no-unused-vars
+  134:14   warning  'err' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  359:27   warning  Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images  jsx-a11y/alt-text
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/pengajuan/page.tsx
+  58:15  warning  'errorText' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  74:48  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  75:11  error    'profilesMap' is never reassigned. Use 'const' instead  prefer-const
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/pengaturan/page.tsx
+   70:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  106:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  157:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/admin/users/page.tsx
+   4:25  warning  'UserPlus' is defined but never used      @typescript-eslint/no-unused-vars
+   4:43  warning  'MoreVertical' is defined but never used  @typescript-eslint/no-unused-vars
+   4:63  warning  'Calendar' is defined but never used      @typescript-eslint/no-unused-vars
+  53:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/chat/page.tsx
+    4:43  warning  'MessageCircle' is defined but never used  @typescript-eslint/no-unused-vars
+  161:14  warning  'err' is defined but never used            @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/page.tsx
+    6:67   warning  'Eye' is defined but never used                                                                                                  @typescript-eslint/no-unused-vars
+    6:72   warning  'Search' is defined but never used                                                                                               @typescript-eslint/no-unused-vars
+    6:80   warning  'TrendingUp' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+    6:92   warning  'TrendingDown' is defined but never used                                                                                         @typescript-eslint/no-unused-vars
+    6:106  warning  'Users' is defined but never used                                                                                                @typescript-eslint/no-unused-vars
+    6:113  warning  'Calendar' is defined but never used                                                                                             @typescript-eslint/no-unused-vars
+   11:36   warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+   12:42   warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+   13:54   warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+   14:44   warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+   80:6    warning  React Hook useEffect has missing dependencies: 'router' and 'supabase.auth'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  134:76   warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  134:90   warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  134:110  warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  134:127  warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  167:35   warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  217:52   warning  Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/pengajuan/baru/page.tsx
+    7:3   warning  'FileText' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   11:3   warning  'User' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   12:3   warning  'Phone' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   13:3   warning  'MapPin' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  117:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  142:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/pengajuan/page.tsx
+    5:59  warning  'Search' is defined but never used         @typescript-eslint/no-unused-vars
+    5:67  warning  'User' is defined but never used           @typescript-eslint/no-unused-vars
+    5:81  warning  'Calendar' is defined but never used       @typescript-eslint/no-unused-vars
+    9:54  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   11:44  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   12:50  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   76:42  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  138:23  warning  'Icon' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  304:39  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  392:42  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/pengajuan/revision/page.tsx
+  13:46  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  25:7   error    Error: Cannot access variable before it is declared
+
+`fetchPengajuan` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/pengajuan/revision/page.tsx:25:7
+  23 |     if (id) {
+  24 |       setPengajuanId(id);
+> 25 |       fetchPengajuan(id);
+     |       ^^^^^^^^^^^^^^ `fetchPengajuan` accessed before it is declared
+  26 |     }
+  27 |   }, [searchParams]);
+  28 |
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/dashboard/pengajuan/revision/page.tsx:29:3
+  27 |   }, [searchParams]);
+  28 |
+> 29 |   const fetchPengajuan = async (id: string) => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 30 |     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 31 |     const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 46 |     setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 47 |   };
+     | ^^^^^ `fetchPengajuan` is declared here
+  48 |
+  49 |   const handleSubmit = async (e: React.FormEvent) => {
+  50 |     e.preventDefault();  react-hooks/immutability
+  80:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/makam/page.tsx
+  13:7  warning  'BLOKS' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/app/page.tsx
+  48:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/components/chat-widget.tsx
+  147:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/components/dashboard-header.tsx
+   9:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/components/header.tsx
+  12:36   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:81   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:95   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:106  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/components/providers.tsx
+  17:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/mwlanaz/Development/capstone-project/web-testing/src/components/snackbar.tsx
+  117:6  warning  'SetSnackbarParams' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 122 problems (3 errors, 119 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
+

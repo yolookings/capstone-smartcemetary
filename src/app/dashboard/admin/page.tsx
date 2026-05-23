@@ -120,7 +120,7 @@ export default function AdminDashboardPage() {
       }
 
       const userIds = [...new Set(pengajuanData.map((p: any) => p.user_id).filter((id: unknown): id is string => typeof id === 'string'))];
-      let profilesMap: Record<string, { email: string; full_name: string }> = {};
+      const profilesMap: Record<string, { email: string; full_name: string }> = {};
       
       if (userIds.length > 0) {
         const userIdsStr = userIds.map((id) => `id=eq.${id}`).join(',');

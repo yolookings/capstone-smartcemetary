@@ -1,0 +1,101 @@
+name: Smart Cemetery Staging DevSecOps Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  security-and-validate:
+    name: Security Scan & Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout Repository
+      - name: Checkout Code
+        name: Checkout code from dev branch
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js (Node 22)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # 3. Install Dependencies
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      # 4. Lint Check (Gate 1)
+      - name: Run ESLint Quality Gate
+        run: npm run lint
+
+      # 5. TypeScript Compilation Check (Gate 2)
+      - name: Run TypeScript Type Check
+        run: npx tsc --noEmit
+
+      # 6. Security Audit (Gate 3)
+      - name: Run NPM Security Audit
+        run: npm audit --audit-level=high || echo "Vulnerabilities found but review required"
+
+      # 7. Snyk Security Vulnerability Scan (Gate 4)
+      - name: Run Snyk Security Scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # 8. Build Application Test (Gate 5)
+      - name: Build Application
+        run: npm run build
+
+      # 9. Smoke Test (Gate 6)
+      - name: Run Smoke Test
+        run: |
+          echo "Verifying build artifact folder exists..."
+          if [ -d ".next" ]; then
+            echo "Smoke Test Passed: .next build directory exists! ✅"
+          else
+            echo "Smoke Test Failed: .next build directory was not found! ❌"
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy to Staging VPS
+    needs: security-and-validate
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Execute Remote Deploy via PM2
+      - name: Deploy to VPS using SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            cd ~/capstone-smartcemetary
+            chmod +x scripts/deploy.sh
+            ./scripts/deploy.sh staging
+
+      # 2. Post-Deployment Quality Gate (Health Check)
+      - name: Perform App Health Check
+        run: |
+          STATUS_URL="${{ secrets.STAGING_APP_URL || 'https://staging.smartcemetary.web.id' }}"
+          echo "Waiting 15 seconds for app to initialize under PM2..."
+          sleep 15
+          echo "Performing health check on $STATUS_URL..."
+          
+          # Perform curl request and extract status code
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$STATUS_URL" || echo "000")
+          echo "App returned status code: $STATUS_CODE"
+          
+          # Verify the HTTP response is 200, 302, or 307
+          if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 302 ] || [ "$STATUS_CODE" -eq 307 ]; then
+            echo "Post-Deployment Quality Gate Passed: App is online and healthy! ✅"
+          else
+            echo "Post-Deployment Quality Gate Failed: App is unreachable or returned status code $STATUS_CODE! ❌"
+            exit 1
+          fi

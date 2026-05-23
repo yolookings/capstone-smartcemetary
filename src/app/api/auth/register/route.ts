@@ -50,8 +50,9 @@ export async function POST(req: Request) {
       userId: data.user.id 
     }, { status: 201 });
 
-  } catch (error: any) {
-    console.error("Registration logic error:", error.message);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Registration logic error:", errorMessage);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

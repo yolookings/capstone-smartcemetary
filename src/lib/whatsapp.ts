@@ -3,7 +3,7 @@ const DASHBOARD_URL = "https://smartcemetary.web.id/";
 
 export function normalizePhone(phone: string): string {
   if (!phone) return "";
-  let normalized = phone.replace(/\D/g, "");
+  const normalized = phone.replace(/\D/g, "");
   if (normalized.startsWith("08")) {
     return "62" + normalized.slice(1);
   }
@@ -30,7 +30,7 @@ export async function sendWhatsAppMessage(
     url?: string;
     filename?: string;
   },
-): Promise<{ success: boolean; error?: string; response?: any }> {
+): Promise<{ success: boolean; error?: string; response?: unknown }> {
   const token = process.env.FONNTE_TOKEN;
 
   if (!token) {

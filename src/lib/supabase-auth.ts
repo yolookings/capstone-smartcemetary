@@ -14,9 +14,6 @@ export const supabaseAdmin = createServerClient(supabaseUrl, supabaseServiceKey,
 
 export async function getServerSession() {
   const cookieStore = await cookies();
-  const cookieHeader = Object.fromEntries(
-    cookieStore.getAll().map(c => [c.name, c.value])
-  );
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
