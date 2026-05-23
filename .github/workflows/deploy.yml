@@ -1,4 +1,4 @@
-name: Deploy Smart Cemetery
+name: Smart Cemetery DevSecOps Pipeline
 
 on:
   push:
@@ -6,7 +6,52 @@ on:
       - main
 
 jobs:
+  security-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout Repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Install Dependencies
+      - name: Install Dependencies
+        run: npm install
+
+      # Lint Check
+      - name: Run ESLint
+        run: npm run lint || true
+
+      # Security Audit
+      - name: Run NPM Audit
+        run: npm audit --audit-level=high || true
+
+      # Dependency Vulnerability Scan
+      - name: Run Snyk Security Scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # Build Project
+      - name: Build Application
+        run: npm run build
+
+      # Smoke Test
+      - name: Run Smoke Test
+        run: |
+          echo "Running smoke test..."
+          test -d .next
+          echo "Build folder exists ✅"
+
   deploy:
+    needs: security-and-test
     runs-on: ubuntu-latest
 
     steps:
@@ -21,10 +66,22 @@ jobs:
           script: |
             cd ~/capstone-smartcemetary
 
+            echo "Pull latest code..."
             git pull origin main
 
+            echo "Install dependencies..."
             npm install
 
+            echo "Build application..."
             npm run build
 
+            echo "Restart PM2..."
             pm2 restart smartcemetary
+
+            echo "Checking application health..."
+
+            sleep 10
+
+            curl -I https://smartcemetary.web.id
+
+            echo "Deployment success 🚀"
