@@ -18,11 +18,39 @@ const inter = Inter({
   weight: ["400", "500", "600"],
 });
 
+const siteUrl = "https://smartcemetary.web.id";
+
 export const metadata: Metadata = {
-  title: "Smart Cemetery - Aplikasi Pemakaman Digital",
-  description: "Sistem Manajemen Pemakaman Digital Modern",
-  icons: {
-    icon: "/logo-smartcemetary.svg",
+  metadataBase: new URL(siteUrl),
+  title: "Smart Cemetery",
+  description:
+    "Sistem manajemen pemakaman digital modern — daftar makam online, verifikasi dokumen, monitoring lokasi, dan tracking status pengajuan secara real-time.",
+  icons: [
+    { rel: "icon", url: "/logo-smartcemetary.png", type: "image/png" },
+    { rel: "shortcut icon", url: "/logo-smartcemetary.png", type: "image/png" },
+  ],
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName: "Smart Cemetery",
+    title: "Smart Cemetery",
+    description:
+      "Sistem manajemen pemakaman digital modern — daftar makam online, verifikasi dokumen, monitoring lokasi, dan tracking status pengajuan secara real-time.",
+    images: [
+      {
+        url: "/logo-smartcemetary.png",
+        width: 512,
+        height: 512,
+        alt: "Smart Cemetery",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Smart Cemetery",
+    description:
+      "Sistem manajemen pemakaman digital modern — daftar makam online, verifikasi dokumen, monitoring lokasi, dan tracking status pengajuan secara real-time.",
+    images: ["/logo-smartcemetary.png"],
   },
 };
 
