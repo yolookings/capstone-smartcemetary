@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MapPin, Search, Plus, AlertCircle, Calendar, User, Edit, Trash2, Eye } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Makam {
   id: string;
@@ -28,34 +29,20 @@ export default function AdminMakamPage() {
 
   const fetchMakam = async () => {
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from('makam')
+        .select('*, profiles(full_name, email)')
+        .order('created_at', { ascending: false });
 
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        setError("Konfigurasi Supabase tidak ditemukan");
+      if (fetchError) {
+        setError(`Error fetching: ${fetchError.message}`);
         setLoading(false);
         return;
       }
 
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/makam?select=*,profiles(full_name,email)&order=created_at.desc`,
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        setError(`Error fetching: ${res.status}`);
-        setLoading(false);
-        return;
-      }
-
-      const data: Makam[] = await res.json();
-      setMakamList(data);
-      setFilteredMakam(data);
+      setMakamList(data || []);
+      setFilteredMakam(data || []);
       setLoading(false);
     } catch (err) {
       setError("Gagal mengambil data");

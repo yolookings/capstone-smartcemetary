@@ -26,19 +26,11 @@ export default function DashboardPage() {
 
       setUser(authUser);
 
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${authUser.id}&select=*`,
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-      const profiles = await res.json();
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id);
+      
       const profileData = profiles?.[0];
       setProfile(profileData);
 
@@ -49,28 +41,19 @@ export default function DashboardPage() {
         return;
       }
 
-      const pengajuanRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/pengajuan?user_id=eq.${authUser.id}&select=*,makam(nik,blok,nomor)&order=created_at.desc`,
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-      const userPengajuan = await pengajuanRes.json();
+      const { data: userPengajuan } = await supabase
+        .from('pengajuan')
+        .select('*, makam(nik, blok, nomor)')
+        .eq('user_id', authUser.id)
+        .order('created_at', { ascending: false });
+      
       setPengajuanList(userPengajuan || []);
 
-      const gravesRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/makam?user_id=eq.${authUser.id}`,
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-      const graves = await gravesRes.json();
+      const { data: graves } = await supabase
+        .from('makam')
+        .select('*')
+        .eq('user_id', authUser.id);
+      
       setMyGraves(graves || []);
 
       setLoading(false);

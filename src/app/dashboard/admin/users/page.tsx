@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Users, Search, UserPlus, Shield, MoreVertical, Mail, Calendar, AlertCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Profile {
   id: string;
@@ -21,34 +22,20 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        setError("Konfigurasi Supabase tidak ditemukan");
+      if (fetchError) {
+        setError(`Error fetching: ${fetchError.message}`);
         setLoading(false);
         return;
       }
 
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?select=*&order=created_at.desc`,
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        setError(`Error fetching: ${res.status}`);
-        setLoading(false);
-        return;
-      }
-
-      const data: Profile[] = await res.json();
-      setUsers(data);
-      setFilteredUsers(data);
+      setUsers(data || []);
+      setFilteredUsers(data || []);
       setLoading(false);
     } catch (err) {
       setError("Gagal mengambil data");

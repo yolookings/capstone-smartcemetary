@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { User, Save, AlertCircle, CheckCircle, Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Profile {
   id: string;
@@ -28,20 +29,8 @@ export default function AdminPengaturanPage() {
 
   const fetchProfile = async () => {
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        setError("Konfigurasi Supabase tidak ditemukan");
-        setLoading(false);
-        return;
-      }
-
-      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
-      const userData = await userRes.json();
-      const user = userData?.user;
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user?.id) {
         setError("User tidak ditemukan");
@@ -49,16 +38,11 @@ export default function AdminPengaturanPage() {
         return;
       }
 
-      const profileRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=*`,
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-      const profiles = await profileRes.json();
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id);
+      
       const profileData = profiles?.[0];
 
       if (profileData) {
@@ -80,24 +64,13 @@ export default function AdminPengaturanPage() {
     setSaved(false);
 
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabase = createClient();
+      const { error: patchError } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName })
+        .eq('id', profile.id);
 
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${profile.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'apikey': SUPABASE_KEY!,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify({ full_name: fullName }),
-        }
-      );
-
-      if (res.ok) {
+      if (!patchError) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       }
@@ -129,33 +102,22 @@ export default function AdminPengaturanPage() {
     setChangingPassword(true);
 
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/user/password`, {
-        method: 'PUT',
-        headers: {
-          'apikey': SUPABASE_KEY!,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          password: newPassword,
-        }),
+      const supabase = createClient();
+      const { error: passwordUpdateError } = await supabase.auth.updateUser({
+        password: newPassword
       });
 
-      if (res.ok) {
+      if (!passwordUpdateError) {
         setPasswordSuccess(true);
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
         setTimeout(() => setPasswordSuccess(false), 3000);
       } else {
-        const data = await res.json();
-        setPasswordError(data.msg || "Gagal mengubah password");
+        setPasswordError(passwordUpdateError.message || "Gagal mengubah password");
       }
     } catch (err) {
-      setPasswordError("Terjadi kesalahan");
+      setPasswordError("Gagal mengubah password");
     } finally {
       setChangingPassword(false);
     }

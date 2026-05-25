@@ -161,7 +161,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(_req: Request) {
+export async function GET() {
   try {
     const cookieStore = await cookies();
 

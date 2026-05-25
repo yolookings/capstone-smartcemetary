@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+
 import Link from "next/link";
 import {
   User,
@@ -33,7 +33,6 @@ export default function RegisterPage() {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [registrationComplete, setRegistrationComplete] = useState(false);
-  const router = useRouter();
   const supabase = createClient();
 
   const getPasswordStrength = (pwd: string): { score: number; label: string; color: string } => {
@@ -59,14 +58,14 @@ export default function RegisterPage() {
     }
     setCheckingUsername(true);
     try {
-      const { data, error: fetchError } = await supabase
+      const { data } = await supabase
         .from("profiles")
         .select("username")
         .eq("username", username.toLowerCase())
         .single();
 
       setUsernameAvailable(!data);
-    } catch (err) {
+    } catch {
       setUsernameAvailable(true);
     }
     setCheckingUsername(false);
@@ -114,6 +113,7 @@ export default function RegisterPage() {
         password,
         options: {
           data: { full_name: name, username: username.toLowerCase() },
+          emailRedirectTo: 'https://smartcemetary.web.id/',
         },
       });
 
@@ -156,9 +156,10 @@ export default function RegisterPage() {
       setSuccess("Pendaftaran berhasil! Silakan cek email untuk verifikasi akun Anda.");
       setRegistrationComplete(true);
       
-    } catch (err: any) {
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
       console.error("Registration error:", err);
-      setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
+      setError(errMsg || "Terjadi kesalahan. Silakan coba lagi.");
     }
     
     setLoading(false);

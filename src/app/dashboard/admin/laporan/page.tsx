@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart3, FileText, Users, MapPin, TrendingUp, Calendar, Download, AlertCircle } from "lucide-react";
+import { BarChart3, FileText, Users, MapPin, TrendingUp, Calendar, AlertCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Stats {
   totalPengajuan: number;
@@ -34,38 +35,49 @@ export default function AdminLaporanPage() {
 
   const fetchStats = async () => {
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabase = createClient();
 
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        setError("Konfigurasi Supabase tidak ditemukan");
+      const [pengajuanResult, profilesResult, makamResult] = await Promise.all([
+        supabase.from('pengajuan').select('id,status'),
+        supabase.from('profiles').select('id,role'),
+        supabase.from('makam').select('id,status'),
+      ]);
+
+      if (pengajuanResult.error || profilesResult.error || makamResult.error) {
+        const errorMsg = [pengajuanResult.error, profilesResult.error, makamResult.error]
+          .filter(Boolean)
+          .map(e => e?.message)
+          .join(', ');
+        setError(`Gagal memuat statistik: ${errorMsg}`);
         setLoading(false);
         return;
       }
 
-      const headers = {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      };
+      interface PengajuanRaw {
+        id: string;
+        status: string;
+      }
+      interface ProfileRaw {
+        id: string;
+        role: string;
+      }
+      interface MakamRaw {
+        id: string;
+        status: string;
+      }
 
-      const [pengajuanRes, profilesRes, makamRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/pengajuan?select=id,status`, { headers }),
-        fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,role`, { headers }),
-        fetch(`${SUPABASE_URL}/rest/v1/makam?select=id,status`, { headers }),
-      ]);
+      const pengajuanData = (pengajuanResult.data || []) as PengajuanRaw[];
+      const profilesData = (profilesResult.data || []) as ProfileRaw[];
+      const makamData = (makamResult.data || []) as MakamRaw[];
 
-      const pengajuanData = await pengajuanRes.json();
-      const profilesData = await profilesRes.json();
-      const makamData = await makamRes.json();
+      const pendingCount = pengajuanData.filter((p) => p.status === 'PENDING').length;
+      const approvedCount = pengajuanData.filter((p) => p.status === 'APPROVED').length;
+      const rejectedCount = pengajuanData.filter((p) => p.status === 'REJECTED').length;
+      const revisionCount = pengajuanData.filter((p) => p.status === 'REVISION').length;
 
-      const pendingCount = pengajuanData.filter((p: any) => p.status === 'PENDING').length;
-      const approvedCount = pengajuanData.filter((p: any) => p.status === 'APPROVED').length;
-      const rejectedCount = pengajuanData.filter((p: any) => p.status === 'REJECTED').length;
-      const revisionCount = pengajuanData.filter((p: any) => p.status === 'REVISION').length;
-
-      const makamAvailable = makamData.filter((m: any) => m.status === 'AVAILABLE').length;
-      const makamOccupied = makamData.filter((m: any) => m.status === 'OCCUPIED').length;
-      const makamReserved = makamData.filter((m: any) => m.status === 'RESERVED').length;
+      const makamAvailable = makamData.filter((m) => m.status === 'AVAILABLE').length;
+      const makamOccupied = makamData.filter((m) => m.status === 'OCCUPIED').length;
+      const makamReserved = makamData.filter((m) => m.status === 'RESERVED').length;
 
       setStats({
         totalPengajuan: pengajuanData.length || 0,
@@ -81,14 +93,17 @@ export default function AdminLaporanPage() {
       });
 
       setLoading(false);
-    } catch (err) {
+    } catch {
       setError("Gagal mengambil data");
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStats();
+    const timer = setTimeout(() => {
+      fetchStats();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   if (loading) {

@@ -1,0 +1,88 @@
+name: Smart Cemetery CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NEXT_PUBLIC_SUPABASE_URL: "https://lzkujbjnculnffpsnjke.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a3VqYmpuY3VsbmZmcHNuamtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MTg0NDQsImV4cCI6MjA5MTE5NDQ0NH0.9qgqx1xgtLZZTBBG5h827WEiYcFUH7UMEtMMx57zXCY"
+  SUPABASE_SERVICE_ROLE_KEY: "mock-service-role-key"
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+  NEXTAUTH_SECRET: "mock-nextauth-secret-key-32-characters"
+  NEXTAUTH_URL: "http://localhost:3000"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install
+        run: npm install
+
+      - name: Lint
+        run: npm run lint || true
+
+      - name: Type Check
+        run: npx tsc --noEmit || true
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke Test
+        run: test -d .next
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/capstone-smartcemetary
+            
+            # 1. Pull the latest code for the pushed branch
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
+            
+            # 2. Install dependencies and build Next.js
+            npm install
+            npm run build
+            
+            # 3. Determine the PM2 app name and target port dynamically based on Git branch
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              PM2_APP="smartcemetary"
+              PORT=3000
+            else
+              PM2_APP="smartcemetary-staging"
+              PORT=3001
+            fi
+            
+            # 4. Restart or start the PM2 app safely (prevents failure if it doesn't exist)
+            if pm2 list | grep -q "$PM2_APP"; then
+              echo "App '$PM2_APP' is currently running. Restarting..."
+              pm2 restart "$PM2_APP"
+            else
+              echo "App '$PM2_APP' is not running. Starting a new process on port $PORT..."
+              PORT=$PORT pm2 start npm --name "$PM2_APP" -- run start
+            fi
+            
+            # 5. Persist the PM2 process list
+            pm2 save

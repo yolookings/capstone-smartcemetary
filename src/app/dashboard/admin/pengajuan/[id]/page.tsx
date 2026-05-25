@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, User, Calendar, MapPin, FileText, Image, Eye, CheckCircle, XCircle, AlertCircle, Clock, Send } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Dokumen {
   id: string;
@@ -66,19 +67,12 @@ export default function PengajuanDetailPage({ params }: Props) {
   }, [params]);
 
   const fetchData = async (pengajuanId: string) => {
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('pengajuan')
+      .select('*, profiles(email, full_name), makam(*), dokumen(*)')
+      .eq('id', pengajuanId);
 
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${pengajuanId}&select=*,profiles(email,full_name),makam(*),dokumen(*)`,
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-        },
-      }
-    );
-    const data = await res.json();
     if (data && data.length > 0) {
       setPengajuan(data[0]);
       setDocuments(data[0].dokumen || []);
@@ -88,25 +82,14 @@ export default function PengajuanDetailPage({ params }: Props) {
 
   const updateStatus = async (newStatus: string, notes: string) => {
     setUpdating(true);
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${id}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          status: newStatus,
-          notes: notes,
-        }),
-      }
-    );
+    const supabase = createClient();
+    await supabase
+      .from('pengajuan')
+      .update({
+        status: newStatus,
+        notes: notes,
+      })
+      .eq('id', id);
 
     fetchData(id);
     setUpdating(false);
@@ -139,48 +122,26 @@ export default function PengajuanDetailPage({ params }: Props) {
   };
 
   const getPresignedUrl = async (fileKey: string) => {
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    
-    const res = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/sign/documents/${fileKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ expiresIn: 300 }),
-      }
-    );
-    const data = await res.json();
-    return `${SUPABASE_URL}/storage/v1${data.signedURL}`;
+    const supabase = createClient();
+    const { data } = await supabase.storage
+      .from('documents')
+      .createSignedUrl(fileKey, 300);
+    return data?.signedUrl || '';
   };
 
   const allocateGrave = async () => {
     if (!blok || !nomor) return;
     setAllocating(true);
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabase = createClient();
 
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/makam?pengajuan_id=eq.${id}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          blok: blok.toUpperCase(),
-          nomor: nomor.toUpperCase(),
-          status: 'RESERVED',
-        }),
-      }
-    );
+    await supabase
+      .from('makam')
+      .update({
+        blok: blok.toUpperCase(),
+        nomor: nomor.toUpperCase(),
+        status: 'RESERVED',
+      })
+      .eq('pengajuan_id', id);
 
     fetchData(id);
     setAllocating(false);

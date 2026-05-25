@@ -67,50 +67,32 @@ export default function AdminDashboardPage() {
     setConnectionStatus('checking');
 
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabase = createClient();
 
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        setError("Konfigurasi Supabase tidak ditemukan. Pastikan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY ada di .env.local");
+      const [profilesResult, pengajuanResult, makamResult] = await Promise.all([
+        supabase.from('profiles').select('id,username,full_name'),
+        supabase.from('pengajuan').select('*, profiles(email, full_name)').order('created_at', { ascending: false }),
+        supabase.from('makam').select('id,status')
+      ]);
+
+      if (profilesResult.error || pengajuanResult.error || makamResult.error) {
+        const errorMsg = [profilesResult.error, pengajuanResult.error, makamResult.error]
+          .filter(Boolean)
+          .map(e => e?.message)
+          .join(', ');
+        setError(`Tidak dapat mengambil data dari Supabase. Error: ${errorMsg}`);
         setConnectionStatus('disconnected');
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      const headers = {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      };
-
-      const profilesRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,username,full_name`, { headers });
-      const pengajuanRes = await fetch(`${SUPABASE_URL}/rest/v1/pengajuan?select=*&order=created_at.desc`, { headers });
-      const makamRes = await fetch(`${SUPABASE_URL}/rest/v1/makam?select=id,status`, { headers });
-
-      if (!profilesRes.ok || !pengajuanRes.ok || !makamRes.ok) {
-        const statuses = `${profilesRes.status}, ${pengajuanRes.status}, ${makamRes.status}`;
-        setError(`Tidak dapat mengambil data dari Supabase. Status: ${statuses}`);
-        setConnectionStatus('disconnected');
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      const profilesData = await profilesRes.json();
-      const pengajuanData = await pengajuanRes.json();
-      const makamData = await makamRes.json();
-
-      if (!Array.isArray(pengajuanData)) {
-        setError("Format data tidak valid dari server Supabase");
-        setConnectionStatus('disconnected');
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
+      const profilesData = profilesResult.data || [];
+      const pengajuanData = pengajuanResult.data || [];
+      const makamData = makamResult.data || [];
 
       setConnectionStatus('connected');
 
-      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const profileData = profilesData.find((p: any) => p.id === user.id);
@@ -119,24 +101,9 @@ export default function AdminDashboardPage() {
         }
       }
 
-      const userIds = [...new Set(pengajuanData.map((p: any) => p.user_id).filter((id: unknown): id is string => typeof id === 'string'))];
-      const profilesMap: Record<string, { email: string; full_name: string }> = {};
-      
-      if (userIds.length > 0) {
-        const userIdsStr = userIds.map((id) => `id=eq.${id}`).join(',');
-        const profilesRes2 = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?or=(${userIdsStr})&select=id,email,full_name`,
-          { headers }
-        );
-        const profilesData2 = await profilesRes2.json();
-        profilesData2?.forEach((profile: any) => {
-          profilesMap[profile.id] = { email: profile.email, full_name: profile.full_name };
-        });
-      }
-
-      const enrichedData = pengajuanData.map((p: any) => ({
+      const enrichedData: PengajuanWithRelations[] = pengajuanData.map((p: any) => ({
         ...p,
-        profiles: profilesMap[p.user_id] || null
+        profiles: p.profiles || undefined
       }));
       
       setPengajuanList(enrichedData);

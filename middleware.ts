@@ -51,17 +51,11 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isAdminRoute) {
-    const profileRes = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=role`,
-      {
-        headers: {
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-      }
-    )
-    const profiles = await profileRes.json()
-    const userRole = profiles?.[0]?.role
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id);
+    const userRole = profiles?.[0]?.role;
 
     if (userRole !== 'ADMIN') {
       const url = request.nextUrl.clone()

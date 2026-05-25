@@ -38,7 +38,6 @@ async function checkRateLimit(
   ipHash: string
 ): Promise<{ allowed: boolean; currentCount: number }> {
   const identifier = userId || ipHash;
-  const identifierType = userId ? "user" : "ip";
   const { month, year } = getCurrentMonthYear();
 
   const result = await query(

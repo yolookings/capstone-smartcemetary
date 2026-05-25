@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { MapPin, Search, AlertCircle, RefreshCw, Wifi, WifiOff, Grid3X3, List, LayoutGrid } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { MapPin, Search, RefreshCw, Wifi, WifiOff, Grid3X3, List } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Makam {
   id: string;
@@ -25,7 +26,6 @@ export default function AdminCemeteryPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [makamList, setMakamList] = useState<Makam[]>([]);
-  const [filteredMakam, setFilteredMakam] = useState<Makam[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -38,29 +38,16 @@ export default function AdminCemeteryPage() {
     setConnectionStatus('checking');
     
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabase = createClient();
 
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        setError("Konfigurasi Supabase tidak ditemukan");
-        setConnectionStatus('disconnected');
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
+      const { data, error: fetchError } = await supabase
+        .from('makam')
+        .select('*')
+        .order('blok')
+        .order('nomor');
 
-      const headers = {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      };
-
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/makam?select=*&order=blok,nomor`,
-        { headers }
-      );
-
-      if (!res.ok) {
-        setError(`Gagal terhubung ke server. Status: ${res.status}`);
+      if (fetchError) {
+        setError(`Gagal terhubung ke server: ${fetchError.message}`);
         setConnectionStatus('disconnected');
         setLoading(false);
         setRefreshing(false);
@@ -68,12 +55,10 @@ export default function AdminCemeteryPage() {
       }
 
       setConnectionStatus('connected');
-      const data: Makam[] = await res.json();
-      setMakamList(data);
-      setFilteredMakam(data);
+      setMakamList(data || []);
       setLoading(false);
       setRefreshing(false);
-    } catch (err) {
+    } catch {
       setError("Tidak dapat terhubung ke server");
       setConnectionStatus('disconnected');
       setLoading(false);
@@ -82,10 +67,13 @@ export default function AdminCemeteryPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    const timer = setTimeout(() => {
+      fetchData();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
+  const filteredMakam = useMemo(() => {
     let filtered = makamList;
 
     if (searchQuery) {
@@ -102,7 +90,7 @@ export default function AdminCemeteryPage() {
       filtered = filtered.filter((m) => m.status === statusFilter);
     }
 
-    setFilteredMakam(filtered);
+    return filtered;
   }, [searchQuery, statusFilter, makamList]);
 
   const stats: Stats = {
