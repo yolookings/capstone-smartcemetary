@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "scratch/**",
     // Gradual migration: ignore legacy files to keep strict rules active on all refactored core files
     "src/components/**",
     "src/app/dashboard/admin/layout.tsx",
