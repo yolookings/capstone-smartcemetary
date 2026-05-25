@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Eye, FileText, Clock, CheckCircle, XCircle, AlertCircle, Filter, Search, RefreshCw, Inbox } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 interface PengajuanWithRelations {
   id: string;
@@ -34,68 +35,23 @@ export default function AdminPengajuanPage() {
     setError(null);
     
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
-        setError("Konfigurasi Supabase tidak ditemukan");
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      const headers = {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      };
-
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/pengajuan?select=*&order=created_at.desc`,
-        { headers }
-      );
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        setError(`Gagal memuat data: ${res.status}`);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      const data = await res.json();
+      const supabase = createClient();
       
-      if (!Array.isArray(data)) {
-        setError("Format data tidak valid");
+      const { data, error: fetchError } = await supabase
+        .from('pengajuan')
+        .select('*, profiles(email, full_name)')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        setError(`Gagal memuat data: ${fetchError.message}`);
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      const userIds = [...new Set(data.map((p: any) => p.user_id).filter(Boolean))];
-      const profilesMap: Record<string, {email: string, full_name: string}> = {};
-      
-      if (userIds.length > 0) {
-        for (const userId of userIds) {
-          const profilesRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=id,email,full_name`,
-            { headers }
-          );
-          
-          if (profilesRes.ok) {
-            const profileData = await profilesRes.json();
-            if (Array.isArray(profileData) && profileData.length > 0) {
-              profilesMap[userId] = { 
-                email: profileData[0].email, 
-                full_name: profileData[0].full_name 
-              };
-            }
-          }
-        }
-      }
-
-      const enrichedData: PengajuanWithRelations[] = data.map(p => ({
+      const enrichedData: PengajuanWithRelations[] = (data || []).map(p => ({
         ...p,
-        profiles: profilesMap[p.user_id] || null
+        profiles: p.profiles || null
       }));
       
       setPengajuanList(enrichedData);

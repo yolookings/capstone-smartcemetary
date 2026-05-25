@@ -19,7 +19,7 @@ log_info() {
 
 log_success() {
   echo -e "${GREEN}[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
-}
+
 
 log_warn() {
   echo -e "${YELLOW}[WARN] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"

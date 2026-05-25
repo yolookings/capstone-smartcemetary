@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Bell, MessageCircle, CheckCircle, AlertCircle, Clock, RefreshCw, Wifi, WifiOff, Trash2, Eye, Mail } from "lucide-react";
+import { createClient } from "@/lib/supabase/browser";
 
 interface Notification {
   id: string;
@@ -26,25 +27,25 @@ export default function AdminNotificationsPage() {
     setConnectionStatus('checking');
     
     try {
-      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabase = createClient();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setConnectionStatus('connected');
+      
+      const { data, error: fetchError } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      if (!SUPABASE_URL || !SUPABASE_KEY) {
+      if (fetchError) {
+        setError(`Gagal memuat notifikasi: ${fetchError.message}`);
         setConnectionStatus('disconnected');
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setConnectionStatus('connected');
-      
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/notifications?order=created_at.desc&limit=100`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-      );
-      const data = await res.json();
-      setNotifications(Array.isArray(data) ? data : []);
+      setNotifications(data || []);
       setLoading(false);
       setRefreshing(false);
     } catch (err) {
@@ -68,14 +69,12 @@ export default function AdminNotificationsPage() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = async (id: string) => {
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY!, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ read: true }),
-    });
+    const supabase = createClient();
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', id);
+
     setNotifications(notifications.map(n => 
       n.id === id ? { ...n, read: true } : n
     ));
@@ -86,13 +85,12 @@ export default function AdminNotificationsPage() {
   };
 
   const deleteNotification = async (id: string) => {
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY!, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-    });
+    const supabase = createClient();
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id);
+
     setNotifications(notifications.filter(n => n.id !== id));
   };
 

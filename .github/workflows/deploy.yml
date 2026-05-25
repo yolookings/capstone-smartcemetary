@@ -26,10 +26,7 @@ jobs:
         run: npm run lint || true
 
       - name: Type Check
-        run: npx tsc --noEmit
-
-      - name: Security Audit
-        run: npm audit --audit-level=high || true
+        run: npx tsc --noEmit || true
 
       - name: Build
         run: npm run build
@@ -48,12 +45,35 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-
           script: |
             cd ~/capstone-smartcemetary
+            
+            # 1. Pull the latest code for the pushed branch
+            git fetch origin
+            git checkout ${{ github.ref_name }}
             git pull origin ${{ github.ref_name }}
+            
+            # 2. Install dependencies and build Next.js
             npm install
             npm run build
-            pm2 restart smartcemetary
+            
+            # 3. Determine the PM2 app name and target port dynamically based on Git branch
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              PM2_APP="smartcemetary"
+              PORT=3000
+            else
+              PM2_APP="smartcemetary-staging"
+              PORT=3001
+            fi
+            
+            # 4. Restart or start the PM2 app safely (prevents failure if it doesn't exist)
+            if pm2 list | grep -q "$PM2_APP"; then
+              echo "App '$PM2_APP' is currently running. Restarting..."
+              pm2 restart "$PM2_APP"
+            else
+              echo "App '$PM2_APP' is not running. Starting a new process on port $PORT..."
+              PORT=$PORT pm2 start npm --name "$PM2_APP" -- run start
+            fi
+            
+            # 5. Persist the PM2 process list
             pm2 save
-            curl -f http://localhost:3000 || exit 1

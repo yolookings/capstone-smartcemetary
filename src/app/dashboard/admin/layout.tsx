@@ -33,33 +33,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.replace('/auth/login');
-        return;
-      }
-
-      const userId = user.id;
-      const profileRes = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role,full_name,username`,
-        {
-          headers: {
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          },
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          router.replace('/auth/login');
+          return;
         }
-      );
-      const profiles = await profileRes.json();
-      const profileData = profiles?.[0];
 
-      if (profileData?.role !== 'ADMIN') {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role,full_name,username')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError || !profileData || profileData.role !== 'ADMIN') {
+          router.replace('/dashboard');
+          return;
+        }
+
+        setProfile(profileData);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error in checkAdmin layout hook:", err);
         router.replace('/dashboard');
-        return;
       }
-
-      setProfile(profileData);
-      setLoading(false);
     };
 
     checkAdmin();
