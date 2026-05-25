@@ -8,6 +8,12 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NEXT_PUBLIC_SUPABASE_URL: "https://lzkujbjnculnffpsnjke.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a3VqYmpuY3VsbmZmcHNuamtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MTg0NDQsImV4cCI6MjA5MTE5NDQ0NH0.9qgqx1xgtLZZTBBG5h827WEiYcFUH7UMEtMMx57zXCY"
+  SUPABASE_SERVICE_ROLE_KEY: "mock-service-role-key"
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+  NEXTAUTH_SECRET: "mock-nextauth-secret-key-32-characters"
+  NEXTAUTH_URL: "http://localhost:3000"
 
 jobs:
   ci:
