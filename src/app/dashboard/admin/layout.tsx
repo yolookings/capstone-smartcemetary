@@ -42,18 +42,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           return;
         }
 
-        const { data: profileData, error: profileError } = await supabase
+        // 1. Verify role securely via JWT metadata first (extremely fast and immune to RLS/Edge DB failures)
+        const jwtRole = user.user_metadata?.role;
+        if (jwtRole !== 'ADMIN') {
+          router.replace('/dashboard');
+          return;
+        }
+
+        // 2. Fetch profile info for display (optional, won't block access if database fails)
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('role,full_name,username')
           .eq('id', user.id)
           .single();
 
-        if (profileError || !profileData || profileData.role !== 'ADMIN') {
-          router.replace('/dashboard');
-          return;
+        if (profileData) {
+          setProfile(profileData);
+        } else {
+          // Graceful fallback to JWT metadata values for display
+          setProfile({
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin',
+            username: user.user_metadata?.username || 'admin'
+          });
         }
 
-        setProfile(profileData);
         setLoading(false);
       } catch (err) {
         console.error("Error in checkAdmin layout hook:", err);
