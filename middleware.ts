@@ -51,11 +51,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isAdminRoute) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id);
-    const userRole = profiles?.[0]?.role;
+    const userRole = user.user_metadata?.role || 'USER';
 
     if (userRole !== 'ADMIN') {
       const url = request.nextUrl.clone()
