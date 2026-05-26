@@ -67,68 +67,30 @@ export default function AdminDashboardPage() {
     setConnectionStatus('checking');
 
     try {
-      const supabase = createClient();
-
-      const [profilesResult, pengajuanResult, makamResult] = await Promise.all([
-        supabase.from('profiles').select('id,username,full_name'),
-        supabase.from('pengajuan').select('*, profiles(email, full_name)').order('created_at', { ascending: false }),
-        supabase.from('makam').select('id,status')
-      ]);
-
-      if (profilesResult.error || pengajuanResult.error || makamResult.error) {
-        const errorMsg = [profilesResult.error, pengajuanResult.error, makamResult.error]
-          .filter(Boolean)
-          .map(e => e?.message)
-          .join(', ');
-        setError(`Tidak dapat mengambil data dari Supabase. Error: ${errorMsg}`);
+      const res = await fetch("/api/admin/stats");
+      
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Gagal mengambil data dari server");
         setConnectionStatus('disconnected');
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      const profilesData = profilesResult.data || [];
-      const pengajuanData = pengajuanResult.data || [];
-      const makamData = makamResult.data || [];
-
+      const data = await res.json();
+      
+      setStats(data.stats);
+      setPengajuanList(data.pengajuanList);
       setConnectionStatus('connected');
-
+      
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const profileData = profilesData.find((p: any) => p.id === user.id);
-        if (profileData) {
-          setProfile(profileData);
-        }
+        const adminProfile = data.pengajuanList.find((p: any) => p.user_id === user.id)?.profiles || 
+                             { full_name: user.user_metadata?.full_name || 'Admin', username: user.user_metadata?.username || 'admin' };
+        setProfile(adminProfile);
       }
-
-      const enrichedData: PengajuanWithRelations[] = pengajuanData.map((p: any) => ({
-        ...p,
-        profiles: p.profiles || undefined
-      }));
-      
-      setPengajuanList(enrichedData);
-
-      const pendingCount = enrichedData.filter((p: any) => p.status === 'PENDING').length;
-      const approvedCount = enrichedData.filter((p: any) => p.status === 'APPROVED').length;
-      const revisionCount = enrichedData.filter((p: any) => p.status === 'REVISION').length;
-      const rejectedCount = enrichedData.filter((p: any) => p.status === 'REJECTED').length;
-
-      const availableMakam = makamData.filter((m: any) => m.status === 'AVAILABLE').length;
-      const occupiedMakam = makamData.filter((m: any) => m.status === 'OCCUPIED').length;
-      const reservedMakam = makamData.filter((m: any) => m.status === 'RESERVED').length;
-
-      setStats({
-        totalPengajuan: enrichedData.length,
-        totalUsers: profilesData.length || 0,
-        totalMakam: makamData.length || 0,
-        availableMakam,
-        occupiedMakam,
-        reservedMakam,
-        pendingCount,
-        approvedCount,
-        rejectedCount,
-        revisionCount
-      });
 
       setLoading(false);
       setRefreshing(false);
