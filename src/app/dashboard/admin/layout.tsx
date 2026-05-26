@@ -16,6 +16,7 @@ const menuItems: NavItem[] = [
   { href: "/dashboard/admin", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
   { href: "/dashboard/admin/pengajuan", label: "Validasi Pengajuan", icon: <FileText size={20} /> },
   { href: "/dashboard/admin/users", label: "Kelola Pengguna", icon: <Users size={20} /> },
+  { href: "/dashboard/admin/makam", label: "Kelola Makam", icon: <MapPin size={20} /> },
   { href: "/dashboard/admin/cemetery", label: "Monitoring Makam", icon: <MapPin size={20} /> },
   { href: "/dashboard/admin/laporan", label: "Laporan", icon: <BarChart3 size={20} /> },
   { href: "/dashboard/admin/notifications", label: "Notifikasi", icon: <Bell size={20} /> },
