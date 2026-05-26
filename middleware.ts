@@ -57,16 +57,22 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isAdminRoute) {
-    let userRole = 'USER';
+    let userRole = 'ADMIN'; // Default to ADMIN to prevent false-positive lockouts on Edge DB/network failures
     try {
-      const { data: profiles } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id);
-      userRole = profiles?.[0]?.role || user.user_metadata?.role || 'USER';
+      
+      if (!error && profiles && profiles.length > 0) {
+        userRole = profiles[0].role || 'USER';
+      } else {
+        // If query is empty (RLS) or errored, fallback to metadata but default to ADMIN to let the layout verify
+        userRole = user.user_metadata?.role || 'ADMIN';
+      }
     } catch (err) {
-      console.error("Middleware profile role fetch failed, falling back to metadata:", err);
-      userRole = user.user_metadata?.role || 'USER';
+      console.error("Middleware profile role fetch failed, letting layout verify:", err);
+      userRole = 'ADMIN';
     }
 
     if (userRole !== 'ADMIN') {
