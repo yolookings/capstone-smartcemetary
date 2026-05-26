@@ -57,7 +57,17 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isAdminRoute) {
-    const userRole = user.user_metadata?.role || 'USER';
+    let userRole = 'USER';
+    try {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id);
+      userRole = profiles?.[0]?.role || user.user_metadata?.role || 'USER';
+    } catch (err) {
+      console.error("Middleware profile role fetch failed, falling back to metadata:", err);
+      userRole = user.user_metadata?.role || 'USER';
+    }
 
     if (userRole !== 'ADMIN') {
       const url = request.nextUrl.clone()

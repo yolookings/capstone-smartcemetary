@@ -25,7 +25,18 @@ export async function GET() {
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user || user.user_metadata?.role !== "ADMIN") {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify role in database (source of truth for promotions)
+    const roleRes = await query(
+      `SELECT role FROM public.profiles WHERE id = $1`,
+      [user.id]
+    );
+    const dbRole = roleRes.rows[0]?.role || user.user_metadata?.role || 'USER';
+
+    if (dbRole !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

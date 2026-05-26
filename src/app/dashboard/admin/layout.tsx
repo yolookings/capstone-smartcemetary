@@ -42,19 +42,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           return;
         }
 
-        // 1. Verify role securely via JWT metadata first (extremely fast and immune to RLS/Edge DB failures)
-        const jwtRole = user.user_metadata?.role;
-        if (jwtRole !== 'ADMIN') {
-          router.replace('/dashboard');
-          return;
-        }
-
-        // 2. Fetch profile info for display (optional, won't block access if database fails)
+        // 1. Fetch profile info (the database source of truth)
         const { data: profileData } = await supabase
           .from('profiles')
           .select('role,full_name,username')
           .eq('id', user.id)
           .single();
+
+        // Check role from profiles first, fallback to JWT metadata
+        const userRole = profileData?.role || user.user_metadata?.role || 'USER';
+
+        if (userRole !== 'ADMIN') {
+          router.replace('/dashboard');
+          return;
+        }
 
         if (profileData) {
           setProfile(profileData);
