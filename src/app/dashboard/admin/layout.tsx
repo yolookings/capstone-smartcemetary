@@ -57,6 +57,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           return;
         }
 
+        // Dynamically synchronize the JWT metadata role with the database role
+        if (user.user_metadata?.role !== 'ADMIN') {
+          console.log("Synchronizing admin role to Supabase Auth session metadata...");
+          await supabase.auth.updateUser({
+            data: { 
+              role: 'ADMIN',
+              full_name: profileData?.full_name || user.user_metadata?.full_name || 'Super Admin'
+            }
+          });
+        }
+
         if (profileData) {
           setProfile(profileData);
         } else {
