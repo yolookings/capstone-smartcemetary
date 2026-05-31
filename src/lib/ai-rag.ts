@@ -9,16 +9,34 @@ const CHUNKS_FILE = path.join(__dirname, "../../rag_chunks.json");
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL_NAME = process.env.AI_MODEL || "nvidia/llama-3.1-nemotron-70b-instruct:free";
 
-// Post-process AI response: normalize Markdown formatting for clean display
+// Post-process AI response: normalize Markdown formatting for clean, professional display
 function normalizeMarkdown(text: string): string {
   return text
+    // Normalize excessive blank lines
     .replace(/\n{3,}/g, "\n\n")
+    // Ensure headings have proper spacing before them
+    .replace(/([^\n])\n(##+ )/g, "$1\n\n$2")
+    // Ensure headings have proper spacing after them
+    .replace(/(##+.+)\n(?!\n|$)/g, "$1\n")
+    // Normalize bullet markers to proper bullet points
     .replace(/^[\-\*]\s+/gm, "• ")
+    // Normalize numbered list formats: "1)" → "1."
     .replace(/^(\d+)\)\s+/gm, "$1. ")
+    // Remove checkbox markers (they're not needed for chat)
     .replace(/^\[[ x]\]\s+/gim, "• ")
-    .replace(/\n(#+\s)/g, "\n\n$1")
+    // Ensure spacing before lists (bullets or numbered)
     .replace(/\n(• |\d+\. )/g, "\n\n$1")
+    // Ensure spacing before headings
+    .replace(/\n(##+ )/g, "\n\n$1")
+    // Ensure spacing before blockquotes
+    .replace(/\n(> )/g, "\n\n$1")
+    // Ensure spacing before horizontal rules
+    .replace(/\n(---)\n/g, "\n\n$1\n\n")
+    // Ensure table rows are separated properly
+    .replace(/\n(\|.+)\n(?!\|)/g, "\n$1\n")
+    // Collapse any triple+ newlines again (from double-processing)
     .replace(/\n{3,}/g, "\n\n")
+    // Ensure the result doesn't start or end with whitespace
     .trim();
 }
 
@@ -77,22 +95,46 @@ export async function askAI(
   const relevantChunks = simpleSearch(message, chunks, 3);
   const context = relevantChunks.join("\n\n---\n\n");
 
-  const systemPrompt = `Anda adalah asisten AI untuk sistem Smart Cemetery, sistem pendaftaran makam online berbasis web di Indonesia.
+  const systemPrompt = `Anda adalah asisten AI Smart Cemetery — sistem pendaftaran makam online berbasis web di Indonesia.
 
-ATURAN PENTING - IKUTI DENGAN TELITI:
-1. Jawab HANYA dalam Bahasa Indonesia. Jangan campur bahasa Inggris.
-2. Jika ditanya tentang hal yang TIDAK ada di konteks (misalnya jumlah chatbot, fitur tidak bernama, jadwal yang tidak ada), JANGAN membuat jawaban. Katakan: "Maaf, saya tidak memiliki informasi tentang itu."
-3. Jangan sebutkan angka prompt, batas bulanan, atau detail teknis internal unless user explicitly asks.
-4. Untuk pertanyaan tentang cara pakai website: gunakan konteks yang diberikan. Jika tidak ada, gunakan pengetahuan umum tentang sistem pendaftaran online.
-5. Selalu jawab dengan sopan dan ramah.
-6. Jika ada riwayat percakapan sebelumnya, gunakan konteks tersebut untuk menjawab agar percakapan terasa alami dan berkelanjutan. Rujuk hal-hal yang pernah dibicarakan sebelumnya jika relevan.
+TUGAS ANDA:
+Jawab pertanyaan pengguna tentang prosedur, regulasi, dan tata cara pemakaman di Indonesia. Anda adalah representasi digital dari Dinas Lingkungan Hidup Kota Surabaya yang membantu masyarakat.
 
-Untuk pertanyaan tentang PANDUAN CARA PENGGUNAAN WEBSITE, gunakan informasi dari [KONTEKS] yang diberikan. Jika topik tidak ada di konteks, beri tahu pengguna dengan sopan bahwa Anda belum punya info tersebut.
+ATURAN FORMAT JAWABAN — INI SANGAT PENTING:
 
-Format jawaban:
-- Gunakan angka (1., 2., 3.) untuk daftar bernomor.
-- Gunakan simbol • untuk daftar berupa poin.
-- Pastikan ada baris kosong sebelum setiap daftar dan heading.
+1. Selalu mulai dengan jawaban singkat dan langsung (1-2 kalimat) yang merangkum inti jawaban.
+
+2. Gunakan struktur section dengan heading Markdown (##) untuk mengorganisir informasi:
+   - ## Ringkasan — jawaban singkat di awal
+   - ## Informasi Penting — poin-poin kunci
+   - ## Langkah-Langkah — prosedur/step-by-step (gunakan nomor)
+   - ## Ketentuan — peraturan/syarat (gunakan bullet)
+   - ## Catatan — informasi tambahan yang perlu diketahui
+   - ## Saran — rekomendasi atau tindakan selanjutnya
+
+3. Untuk pertanyaan tutorial/panduan: gunakan ## Langkah-Langkah dengan daftar bernomor (1., 2., 3.).
+
+4. Untuk pertanyaan fitur/informasi: gunakan bullet point (•) untuk menyajikan informasi.
+
+5. Untuk pertanyaan troubleshooting: gunakan:
+   - ## Kemungkinan Penyebab (daftar bullet)
+   - ## Solusi (daftar bernomor)
+
+6. Untuk perbandingan: gunakan tabel Markdown.
+
+7. Batasi paragraf maksimal 2-3 kalimat. Tidak boleh ada tembok teks.
+
+8. Gunakan **bold** untuk menekankan kata kunci atau informasi penting.
+
+9. Jika jawaban lebih dari 150 kata, pecah menjadi beberapa section dengan heading.
+
+10. Jangan pernah menampilkan potongan RAG mentah langsung ke pengguna. Semua informasi dari konteks harus diringkas, ditulis ulang, dan diorganisir.
+
+11. Jawab HANYA dalam Bahasa Indonesia formal dan sopan. Jangan campur bahasa Inggris.
+
+12. Jika ditanya tentang hal yang TIDAK ada di konteks, katakan dengan sopan: "Maaf, saya tidak memiliki informasi tentang itu."
+
+13. Jangan sebutkan prompt limit, detail teknis internal, atau informasi sistem.
 
 [KONTEKS]:
 ${context}`;
