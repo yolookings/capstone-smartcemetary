@@ -9,7 +9,7 @@ const RATE_LIMIT = 10;
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
-  
+
   if (forwarded) {
     return forwarded.split(",")[0].trim();
   }
@@ -28,11 +28,6 @@ function getCurrentMonthYear(): { month: number; year: number } {
   return { month: now.getMonth() + 1, year: now.getFullYear() };
 }
 
-function generateTitle(message: string): string {
-  const cleaned = message.replace(/\s+/g, " ").trim();
-  return cleaned.length > 30 ? cleaned.substring(0, 30) + "..." : cleaned;
-}
-
 async function checkRateLimit(
   userId: string | null,
   ipHash: string
@@ -41,7 +36,7 @@ async function checkRateLimit(
   const { month, year } = getCurrentMonthYear();
 
   const result = await query(
-    `SELECT usage_count FROM chat_usage 
+    `SELECT usage_count FROM chat_usage
      WHERE identifier = $1 AND month = $2 AND year = $3`,
     [identifier, month, year]
   );
@@ -67,69 +62,10 @@ async function incrementUsage(
   );
 }
 
-async function getOrCreateSession(
-  sessionId: string | null,
-  userId: string | null,
-  ipHash: string,
-  firstMessage: string
-): Promise<string> {
-  if (sessionId) {
-    const result = await query(
-      `SELECT id FROM chat_sessions WHERE id = $1 AND (user_id = $2 OR ip_hash = $3)`,
-      [sessionId, userId, ipHash]
-    );
-    if (result.rows.length > 0) {
-      return sessionId;
-    }
-  }
-
-  const title = generateTitle(firstMessage);
-  const result = await query(
-    `INSERT INTO chat_sessions (user_id, ip_hash, title, last_message)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id`,
-    [userId, ipHash, title, firstMessage]
-  );
-  
-  return result.rows[0].id;
-}
-
-async function saveMessage(
-  sessionId: string,
-  role: "user" | "ai",
-  content: string
-): Promise<void> {
-  await query(
-    `INSERT INTO chat_messages (session_id, role, content)
-     VALUES ($1, $2, $3)`,
-    [sessionId, role, content]
-  );
-}
-
-async function updateSession(
-  sessionId: string,
-  message: string
-): Promise<void> {
-  await query(
-    `UPDATE chat_sessions 
-     SET last_message = $2, updated_at = CURRENT_TIMESTAMP
-     WHERE id = $1`,
-    [sessionId, message]
-  );
-}
-
-async function getSessionMessages(sessionId: string): Promise<{ role: "user" | "ai"; content: string }[]> {
-  const result = await query(
-    `SELECT role, content FROM chat_messages WHERE session_id = $1 ORDER BY created_at ASC`,
-    [sessionId]
-  );
-  return result.rows;
-}
-
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser();
-    const { message, session_id } = await req.json();
+    const { message } = await req.json();
 
     if (!message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
@@ -149,24 +85,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const sessionId = await getOrCreateSession(
-      session_id || null,
-      user?.id || null,
-      ipHash,
-      message
-    );
+    const response = await askAI(message, user?.id || undefined);
 
-    const history = await getSessionMessages(sessionId);
-
-    await saveMessage(sessionId, "user", message);
-
-    const response = await askAI(message, user?.id, history);
-
-    await saveMessage(sessionId, "ai", response);
-    await updateSession(sessionId, message);
     await incrementUsage(user?.id || null, ipHash);
 
-    return NextResponse.json({ response, session_id: sessionId });
+    return NextResponse.json({ response });
   } catch (error) {
     console.error("Chat error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
