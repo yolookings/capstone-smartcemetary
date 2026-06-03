@@ -1,42 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, User, Calendar, MapPin, FileText, Image, Eye, CheckCircle, XCircle, AlertCircle, Clock, Send } from "lucide-react";
+import { ArrowLeft, FileText, Loader2, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+
+import { ApplicationSummary } from "@/components/admin/pengajuan-detail/application-summary";
+import { ApplicantInfo } from "@/components/admin/pengajuan-detail/applicant-info";
+import { DeceasedInfo } from "@/components/admin/pengajuan-detail/deceased-info";
+import { VerificationPanel } from "@/components/admin/pengajuan-detail/verification-panel";
+import { DocumentCard } from "@/components/admin/pengajuan-detail/document-card";
+import { GraveAllocation } from "@/components/admin/pengajuan-detail/grave-allocation";
+import { TimelineWidget } from "@/components/admin/pengajuan-detail/timeline-widget";
+import type { TimelineEvent } from "@/components/admin/pengajuan-detail/timeline-widget";
 
 interface Dokumen {
   id: string;
   type: string;
   file_url: string;
   file_key: string;
+  created_at?: string;
 }
 
 interface Makam {
   id: string;
-  deceased_name: string;
-  deceased_date: string;
-  nik: string;
-  applicant_name: string;
-  applicant_phone: string;
-  relationship: string;
-  blok: string;
-  nomor: string;
-  status: string;
+  deceased_name: string | null;
+  deceased_date: string | null;
+  nik: string | null;
+  applicant_name: string | null;
+  applicant_phone: string | null;
+  relationship: string | null;
+  blok: string | null;
+  nomor: string | null;
+  status: string | null;
+  created_at?: string;
 }
 
 interface Pengajuan {
   id: string;
   status: string;
-  notes: string;
+  notes: string | null;
   created_at: string;
+  updated_at?: string;
   user_id: string;
   profiles?: {
-    email: string;
-    full_name: string;
+    email: string | null;
+    full_name: string | null;
+    phone?: string | null;
   };
-  makam?: Makam;
+  makam?: Makam | Makam[];
   dokumen?: Dokumen[];
 }
 
@@ -44,401 +57,351 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+function buildTimelineEvents(pengajuan: Pengajuan): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  const now = new Date().toISOString();
+
+  events.push({
+    id: "created",
+    type: "created",
+    title: "Pengajuan Dibuat",
+    description: "Pengajuan baru masuk ke sistem",
+    timestamp: pengajuan.created_at || now,
+  });
+
+  if (pengajuan.status === "APPROVED") {
+    events.push({
+      id: "approved",
+      type: "approved",
+      title: "Pengajuan Disetujui",
+      description: pengajuan.notes || "Dokumen telah diverifikasi dan disetujui oleh admin",
+      timestamp: pengajuan.updated_at || now,
+      actor: "Admin",
+    });
+  }
+
+  if (pengajuan.status === "REJECTED") {
+    events.push({
+      id: "rejected",
+      type: "rejected",
+      title: "Pengajuan Ditolak",
+      description: pengajuan.notes || "Pengajuan ditolak oleh admin",
+      timestamp: pengajuan.updated_at || now,
+      actor: "Admin",
+    });
+  }
+
+  if (pengajuan.status === "REVISION" || pengajuan.status === "NEED_REVISION") {
+    events.push({
+      id: "revision_requested",
+      type: "revision_requested",
+      title: "Revisi Dokumen Diminta",
+      description: pengajuan.notes || "Admin meminta perbaikan dokumen",
+      timestamp: pengajuan.updated_at || now,
+      actor: "Admin",
+    });
+  }
+
+  if (pengajuan.notes && !["APPROVED", "REJECTED", "REVISION", "NEED_REVISION"].includes(pengajuan.status)) {
+    events.push({
+      id: "note",
+      type: "note_added",
+      title: "Catatan Ditambahkan",
+      description: pengajuan.notes,
+      timestamp: pengajuan.updated_at || now,
+      actor: "Admin",
+    });
+  }
+
+  return events.reverse();
+}
+
 export default function PengajuanDetailPage({ params }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
-  const [documents, setDocuments] = useState<Dokumen[]>([]);
   const [updating, setUpdating] = useState(false);
-  const [allocating, setAllocating] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<Dokumen | null>(null);
+  const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
   const [id, setId] = useState<string>("");
-  const [blok, setBlok] = useState("");
-  const [nomor, setNomor] = useState("");
-  const [revisionModal, setRevisionModal] = useState(false);
-  const [revisionNote, setRevisionNote] = useState("");
-  const [requestingRevision, setRequestingRevision] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const supabase = createClient();
+
+  const fetchData = useCallback(async (pengajuanId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: fetchError } = await supabase
+        .from("pengajuan")
+        .select("*, profiles(email, full_name, phone), makam(*), dokumen(*)")
+        .eq("id", pengajuanId);
+
+      if (fetchError) {
+        setError(fetchError.message);
+      } else if (data && data.length > 0) {
+        setPengajuan(data[0]);
+      } else {
+        setError("Pengajuan tidak ditemukan");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat data");
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
 
   useEffect(() => {
-    params.then(p => {
+    params.then((p) => {
       setId(p.id);
       fetchData(p.id);
     });
-  }, [params]);
+  }, [params, fetchData]);
 
-  const fetchData = async (pengajuanId: string) => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('pengajuan')
-      .select('*, profiles(email, full_name), makam(*), dokumen(*)')
-      .eq('id', pengajuanId);
+  const getPresignedUrl = useCallback(async (fileKey: string) => {
+    const { data } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(fileKey, 300);
+    return data?.signedUrl || "";
+  }, [supabase.storage]);
 
-    if (data && data.length > 0) {
-      setPengajuan(data[0]);
-      setDocuments(data[0].dokumen || []);
-    }
-    setLoading(false);
-  };
-
-  const updateStatus = async (newStatus: string, notes: string) => {
+  const updateStatus = useCallback(async (newStatus: string, notes: string) => {
     setUpdating(true);
-    const supabase = createClient();
-    await supabase
-      .from('pengajuan')
-      .update({
-        status: newStatus,
-        notes: notes,
-      })
-      .eq('id', id);
+    try {
+      const res = await fetch(`/api/admin/pengajuan/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, notes }),
+      });
+      if (!res.ok) throw new Error("Gagal memperbarui status");
+      await fetchData(id);
+    } finally {
+      setUpdating(false);
+    }
+  }, [id, fetchData]);
 
-    fetchData(id);
-    setUpdating(false);
-  };
+  const handleApprove = useCallback(async () => {
+    await updateStatus("APPROVED", "Dokumen diverifikasi dan disetujui");
+  }, [updateStatus]);
 
-  const requestRevision = async () => {
-    if (!revisionNote.trim()) return;
-    setRequestingRevision(true);
-    
+  const handleReject = useCallback(async () => {
+    await updateStatus("REJECTED", "Dokumen tidak valid");
+  }, [updateStatus]);
+
+  const handleRevision = useCallback(async (note: string) => {
+    setUpdating(true);
     try {
       const res = await fetch(`/api/admin/pengajuan/${id}/revision`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ revisionNote })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revisionNote: note }),
       });
-      
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-      } else {
-        setRevisionModal(false);
-        setRevisionNote("");
-        fetchData(id);
-      }
-    } catch (err) {
-      alert("Gagal mengirim permintaan revisi");
+      if (!res.ok) throw new Error("Gagal mengirim permintaan revisi");
+      await fetchData(id);
     } finally {
-      setRequestingRevision(false);
+      setUpdating(false);
     }
-  };
+  }, [id, fetchData]);
 
-  const getPresignedUrl = async (fileKey: string) => {
-    const supabase = createClient();
-    const { data } = await supabase.storage
-      .from('documents')
-      .createSignedUrl(fileKey, 300);
-    return data?.signedUrl || '';
-  };
+  const handleAllocate = useCallback(async (blok: string, nomor: string) => {
+    await updateStatus(pengajuan?.status || "PENDING", "");
+    const { error: updateError } = await supabase
+      .from("makam")
+      .update({ blok, nomor, status: "RESERVED" })
+      .eq("pengajuan_id", id);
+    if (updateError) throw updateError;
+  }, [id, pengajuan?.status, supabase, updateStatus]);
 
-  const allocateGrave = async () => {
-    if (!blok || !nomor) return;
-    setAllocating(true);
-    const supabase = createClient();
+  const handleRefresh = useCallback(() => {
+    return fetchData(id);
+  }, [id, fetchData]);
 
-    await supabase
-      .from('makam')
-      .update({
-        blok: blok.toUpperCase(),
-        nomor: nomor.toUpperCase(),
-        status: 'RESERVED',
-      })
-      .eq('pengajuan_id', id);
+  // Normalize makam data (could be array or single)
+  const makamData: Makam | null = Array.isArray(pengajuan?.makam)
+    ? (pengajuan?.makam as Makam[])?.[0] || null
+    : (pengajuan?.makam as Makam) || null;
 
-    fetchData(id);
-    setAllocating(false);
-  };
+  const documents = pengajuan?.dokumen || [];
+  const timelineEvents = pengajuan ? buildTimelineEvents(pengajuan) : [];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'APPROVED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'REVISION': return 'bg-rose-100 text-rose-700 border-rose-200';
-      case 'REJECTED': return 'bg-slate-100 text-slate-700 border-slate-200';
-      default: return 'bg-slate-100 text-slate-700';
-    }
-  };
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-sm text-slate-400 font-medium">Memuat data pengajuan...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'PENDING': return 'Menunggu';
-      case 'APPROVED': return 'Disetujui';
-      case 'REVISION': return 'Revisi';
-      case 'REJECTED': return 'Ditolak';
-      default: return status;
-    }
-  };
-
-  const getDocTypeLabel = (type: string) => {
-    switch (type) {
-      case 'KTP': return 'KTP Pemohon';
-      case 'KK': return 'Kartu Keluarga';
-      case 'SURAT_KEMATIAN': return 'Surat Keterangan Kematian';
-      default: return type;
-    }
-  };
-
-  const handleViewDoc = async (doc: Dokumen) => {
-    const url = await getPresignedUrl(doc.file_key);
-    window.open(url, '_blank');
-  };
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-    </div>
-  );
-
-  if (!pengajuan) return (
-    <div className="p-8 text-center">
-      <p className="text-slate-500">Pengajuan tidak ditemukan</p>
-      <Link href="/dashboard/admin" className="text-emerald-600 hover:underline mt-2 inline-block">
-        Kembali ke Dashboard
-      </Link>
-    </div>
-  );
+  // Error state
+  if (error || !pengajuan) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)] p-8">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 max-w-lg text-center">
+          <div className="w-24 h-24 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
+            <AlertCircle className="text-red-500" size={48} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">Gagal Memuat Data</h2>
+          <p className="text-slate-500 mb-8">{error || "Pengajuan tidak ditemukan"}</p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => fetchData(id)}
+              className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-lg shadow-primary/20"
+            >
+              Coba Lagi
+            </button>
+            <Link
+              href="/dashboard/admin/pengajuan"
+              className="px-8 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-neutral transition-all"
+            >
+              Kembali
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full space-y-4 pb-10">
+    <div className="space-y-6 pb-20">
+      {/* Back Navigation */}
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/admin" className="p-2.5 bg-white rounded-xl border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition-all shadow-sm">
-          <ArrowLeft size={20} />
+        <Link
+          href="/dashboard/admin/pengajuan"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border border-slate-100 text-slate-500 hover:text-primary hover:border-primary/30 transition-all shadow-sm"
+        >
+          <ArrowLeft size={18} />
+          <span className="text-sm font-bold">Kembali</span>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Detail Pengajuan</h1>
-          <p className="text-slate-500 text-sm">Verifikasi dokumen dan kelola status pengajuan</p>
+        <div className="h-8 w-px bg-slate-200" />
+        <div className="flex items-center gap-2 text-sm text-slate-400">
+          <FileText size={16} />
+          <span className="font-medium">Detail Pengajuan</span>
         </div>
       </div>
 
+      {/* Application Summary Header */}
+      <ApplicationSummary
+        id={pengajuan.id}
+        applicantName={makamData?.applicant_name || pengajuan.profiles?.full_name || null}
+        status={pengajuan.status}
+        documentCount={documents.length}
+        createdAt={pengajuan.created_at}
+        updatedAt={pengajuan.updated_at}
+      />
+
+      {/* Main Grid — 2 columns on large screens */}
       <div className="grid lg:grid-cols-3 gap-6">
+        {/* Left Column — Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                  <User className="text-emerald-600" size={20} />
-                </div>
-                <h3 className="font-bold text-slate-900">Data Pendaftar</h3>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Nama</p>
-                  <p className="text-slate-800 font-medium">{pengajuan.profiles?.full_name || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Email</p>
-                  <p className="text-slate-800 font-medium">{pengajuan.profiles?.email || '-'}</p>
-                </div>
-              </div>
-            </div>
+          {/* Applicant Info */}
+          <ApplicantInfo
+            fullName={pengajuan.profiles?.full_name || null}
+            email={pengajuan.profiles?.email || null}
+            phone={pengajuan.profiles?.phone || null}
+            role="USER"
+            applicantName={makamData?.applicant_name || null}
+            applicantPhone={makamData?.applicant_phone || null}
+          />
 
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center">
-                  <Calendar className="text-rose-600" size={20} />
-                </div>
-                <h3 className="font-bold text-slate-900">Data Almarhum</h3>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Nama Almarhum/ah</p>
-                  <p className="text-slate-800 font-bold text-lg">{pengajuan.makam?.deceased_name || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">NIK (Nomor Induk Kependudukan)</p>
-                  <p className="text-slate-800 font-bold text-lg">{pengajuan.makam?.nik || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Tanggal Wafat</p>
-                  <p className="text-slate-800 font-bold">{pengajuan.makam?.deceased_date 
-                    ? new Date(pengajuan.makam.deceased_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-                    : '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Hubungan Dengan Almarhum</p>
-                  <p className="text-slate-800 font-bold">{pengajuan.makam?.relationship || '-'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Deceased Info */}
+          <DeceasedInfo
+            deceasedName={makamData?.deceased_name || null}
+            nik={makamData?.nik || null}
+            deceasedDate={makamData?.deceased_date || null}
+            relationship={makamData?.relationship || null}
+            applicantName={makamData?.applicant_name || null}
+            applicantPhone={makamData?.applicant_phone || null}
+            blok={makamData?.blok || null}
+            nomor={makamData?.nomor || null}
+          />
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                <MapPin className="text-blue-600" size={20} />
-              </div>
-              <h3 className="font-bold text-slate-900">Alokasi Lokasi Makam</h3>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Blok</p>
-                <input
-                  type="text"
-                  value={blok || pengajuan.makam?.blok || ''}
-                  onChange={(e) => setBlok(e.target.value)}
-                  placeholder="Contoh: A, B, C"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Nomor</p>
-                <input
-                  type="text"
-                  value={nomor || pengajuan.makam?.nomor || ''}
-                  onChange={(e) => setNomor(e.target.value)}
-                  placeholder="Contoh: 01, 02, 03"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-              </div>
-            </div>
-            <button
-              onClick={allocateGrave}
-              disabled={allocating || (!blok && !nomor)}
-              className="mt-4 w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <MapPin size={18} />
-              {allocating ? 'Menyimpan...' : 'Simpan Lokasi'}
-            </button>
-          </div>
+          {/* Grave Allocation */}
+          <GraveAllocation
+            pengajuanId={pengajuan.id}
+            currentBlok={makamData?.blok || null}
+            currentNomor={makamData?.nomor || null}
+            graveStatus={makamData?.status || null}
+            pengajuanStatus={pengajuan.status}
+            onAllocate={handleAllocate}
+            onRefresh={handleRefresh}
+          />
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                  <FileText className="text-amber-600" size={20} />
-                </div>
-                <h3 className="font-bold text-slate-900">Dokumen Persyaratan</h3>
-              </div>
-              <span className="text-xs font-medium text-slate-500">{documents.length} dokumen</span>
-            </div>
-            
-            {documents.length > 0 ? (
-              <div className="grid md:grid-cols-2 gap-4">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="p-4 border-2 border-slate-100 rounded-xl hover:border-emerald-300 transition-all group">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                          <Image className="text-slate-500" size={18} />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800">{getDocTypeLabel(doc.type)}</p>
-                          <p className="text-xs text-slate-400">{doc.id.slice(0, 8)}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleViewDoc(doc)}
-                      className="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Eye size={16} />
-                      Lihat Dokumen
-                    </button>
+          {/* Documents Section */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div className="p-6 lg:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <FileText className="text-primary" size={20} />
                   </div>
-                ))}
+                  <div>
+                    <h3 className="font-bold text-slate-900 font-manrope">Dokumen Persyaratan</h3>
+                    <p className="text-xs text-slate-400 font-medium">
+                      Dokumen yang telah diupload oleh pemohon
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg">
+                  {documents.length} file
+                </span>
               </div>
-            ) : (
-              <div className="p-8 text-center bg-slate-50 rounded-xl">
-                <FileText className="mx-auto text-slate-300 mb-2" size={32} />
-                <p className="text-slate-500 text-sm">Tidak ada dokumen diupload</p>
-              </div>
-            )}
+
+              {documents.length > 0 ? (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {documents.map((doc) => (
+                    <DocumentCard
+                      key={doc.id}
+                      id={doc.id}
+                      type={doc.type}
+                      fileUrl={doc.file_url}
+                      fileKey={doc.file_key}
+                      createdAt={doc.created_at}
+                      onView={getPresignedUrl}
+                      verificationStatus={pengajuan.status === "APPROVED" ? "verified" : "uploaded"}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-300 bg-neutral/50 rounded-xl border border-dashed border-slate-200">
+                  <FileText size={40} className="mb-3 opacity-50" />
+                  <p className="text-sm font-medium">Belum ada dokumen yang diupload</p>
+                  <p className="text-xs mt-1">Dokumen akan muncul setelah pemohon melengkapi pengajuan</p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Timeline */}
+          <TimelineWidget events={timelineEvents} />
         </div>
 
+        {/* Right Column — Verification Panel */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-6">
-            <h3 className="font-bold text-slate-900 text-lg mb-4">Status Verifikasi</h3>
-            
-            <div className="mb-6">
-              <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Status Saat Ini</p>
-              <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(pengajuan.status)}`}>
-                {pengajuan.status === 'PENDING' && <Clock size={14} />}
-                {pengajuan.status === 'APPROVED' && <CheckCircle size={14} />}
-                {pengajuan.status === 'REVISION' && <AlertCircle size={14} />}
-                {pengajuan.status === 'REJECTED' && <XCircle size={14} />}
-                {getStatusLabel(pengajuan.status)}
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">Update Status</p>
-              
-              <button
-                onClick={() => updateStatus('APPROVED', 'Dokumen diverifikasi dan disetujui')}
-                disabled={updating || pengajuan.status === 'APPROVED'}
-                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <CheckCircle size={18} />
-                Setuju & Approve
-              </button>
-
-              <button
-                onClick={() => setRevisionModal(true)}
-                disabled={updating || pengajuan.status === 'REVISION'}
-                className="w-full py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <AlertCircle size={18} />
-                Minta Revisi
-              </button>
-
-              <button
-                onClick={() => updateStatus('REJECTED', 'Dokumen tidak valid')}
-                disabled={updating || pengajuan.status === 'REJECTED'}
-                className="w-full py-3 bg-slate-600 text-white rounded-xl font-semibold hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <XCircle size={18} />
-                Tolak Pengajuan
-              </button>
-            </div>
-
-            {pengajuan.notes && (
-              <div className="mt-6 pt-4 border-t border-slate-100">
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Catatan</p>
-                <p className="text-sm text-slate-600">{pengajuan.notes}</p>
-              </div>
-            )}
-
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Tanggal Pengajuan</p>
-              <p className="text-sm text-slate-600">
-                {new Date(pengajuan.created_at).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </div>
+          <div className="sticky top-6 space-y-6">
+            <VerificationPanel
+              pengajuanId={pengajuan.id}
+              currentStatus={pengajuan.status}
+              notes={pengajuan.notes}
+              createdAt={pengajuan.created_at}
+              updatedAt={pengajuan.updated_at}
+              documentCount={documents.length}
+              onApprove={handleApprove}
+              onRequestRevision={handleRevision}
+              onReject={handleReject}
+              onRefresh={handleRefresh}
+            />
           </div>
         </div>
       </div>
 
-      {revisionModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">Minta Revisi Dokumen</h3>
-            <textarea
-              className="w-full border border-slate-300 rounded-lg p-3 mb-4"
-              rows={4}
-              placeholder="Contoh: Foto KTP blur, please upload ulang dengan jelas"
-              value={revisionNote}
-              onChange={(e) => setRevisionNote(e.target.value)}
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => setRevisionModal(false)}
-                className="flex-1 py-3 border border-slate-300 rounded-xl font-semibold"
-              >
-                Batal
-              </button>
-              <button
-                onClick={requestRevision}
-                disabled={requestingRevision || !revisionNote.trim()}
-                className="flex-1 py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 disabled:opacity-50"
-              >
-                {requestingRevision ? "Mengirim..." : "Kirim"}
-              </button>
-            </div>
+      {/* Loading overlay during status updates */}
+      {updating && (
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-40">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 p-8 flex items-center gap-4">
+            <Loader2 size={24} className="animate-spin text-primary" />
+            <span className="text-sm font-bold text-slate-700">Memperbarui status pengajuan...</span>
           </div>
         </div>
       )}
