@@ -12,11 +12,17 @@ interface Makam {
   deceased_name: string | null;
   deceased_date: string | null;
   user_id: string | null;
+  plot_id: string | null;
   created_at: string;
   profiles?: {
     full_name: string;
     email: string;
   };
+}
+
+interface RicherMakam extends Makam {
+  cemetery_name?: string;
+  block_name?: string;
 }
 
 export default function AdminMakamPage() {
@@ -41,8 +47,60 @@ export default function AdminMakamPage() {
         return;
       }
 
-      setMakamList(data || []);
-      setFilteredMakam(data || []);
+      // Enrich with cemetery/block info from normalized schema
+      const enriched: RicherMakam[] = (data || []).map((m: Makam) => {
+        const entry: RicherMakam = { ...m };
+        // Will be populated asynchronously below
+        return entry;
+      });
+
+      // Fetch plot info for records that have plot_id
+      const plotIds = enriched.filter(m => m.plot_id).map(m => m.plot_id!);
+      if (plotIds.length > 0) {
+        const { data: plots } = await supabase
+          .from('cemetery_plots')
+          .select('id, plot_number, block_id')
+          .in('id', plotIds);
+        if (plots) {
+          const blockIds = [...new Set(plots.filter(p => p.block_id).map(p => p.block_id))];
+          let blocksMap: Record<string, { name: string; code: string; cemetery_id: string }> = {};
+          if (blockIds.length > 0) {
+            const { data: blocks } = await supabase
+              .from('cemetery_blocks')
+              .select('id, name, code, cemetery_id')
+              .in('id', blockIds);
+            if (blocks) {
+              const cemeteryIds = [...new Set(blocks.filter(b => b.cemetery_id).map(b => b.cemetery_id))];
+              let cemeteriesMap: Record<string, string> = {};
+              if (cemeteryIds.length > 0) {
+                const { data: cemeteries } = await supabase
+                  .from('cemeteries')
+                  .select('id, name')
+                  .in('id', cemeteryIds);
+                if (cemeteries) {
+                  cemeteries.forEach(c => { cemeteriesMap[c.id] = c.name; });
+                }
+              }
+              blocks.forEach(b => {
+                blocksMap[b.id] = { name: b.name, code: b.code, cemetery_id: b.cemetery_id };
+              });
+              enriched.forEach(entry => {
+                if (!entry.plot_id) return;
+                const plot = plots.find(p => p.id === entry.plot_id);
+                if (!plot) return;
+                const block = blocksMap[plot.block_id];
+                if (block) {
+                  entry.block_name = block.name;
+                  entry.cemetery_name = cemeteriesMap[block.cemetery_id] || '';
+                }
+              });
+            }
+          }
+        }
+      }
+
+      setMakamList(enriched);
+      setFilteredMakam(enriched);
       setLoading(false);
     } catch (err) {
       setError("Gagal mengambil data");
@@ -253,9 +311,13 @@ export default function AdminMakamPage() {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <MapPin size={16} className="text-slate-400" />
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-medium">
-                          Blok {makam.blok} / No. {makam.nomor}
+                        <MapPin size={16} className="text-slate-400 shrink-0" />
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-medium whitespace-nowrap">
+                          {(makam as RicherMakam).cemetery_name
+                            ? `${(makam as RicherMakam).cemetery_name} - ${(makam as RicherMakam).block_name || `Blok ${makam.blok}`} - No. ${makam.nomor}`
+                            : makam.blok
+                              ? `Blok ${makam.blok} / No. ${makam.nomor}`
+                              : "Belum dialokasi"}
                         </span>
                       </div>
                     </td>

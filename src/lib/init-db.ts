@@ -39,12 +39,13 @@ export async function cleanupAndInitDb() {
       );
     `);
 
-    // Makam table
+    // Makam table (with plot_id for normalized allocation)
     await client.query(`
       CREATE TABLE IF NOT EXISTS makam (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         pengajuan_id UUID REFERENCES pengajuan(id) ON DELETE SET NULL,
-        user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- Added user_id for privacy
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        plot_id UUID,
         blok TEXT,
         nomor TEXT,
         deceased_name TEXT,
@@ -56,6 +57,61 @@ export async function cleanupAndInitDb() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Cemeteries table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS cemeteries (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        code TEXT NOT NULL UNIQUE,
+        address TEXT,
+        description TEXT,
+        map_config JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Cemetery blocks table (with polygon column for geographic boundaries)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS cemetery_blocks (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        cemetery_id UUID NOT NULL REFERENCES cemeteries(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        code TEXT NOT NULL,
+        capacity INTEGER NOT NULL DEFAULT 0,
+        map_coords JSONB DEFAULT '{}'::jsonb,
+        polygon JSONB DEFAULT '{}'::jsonb,
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(cemetery_id, code)
+      );
+    `);
+
+    // Migration: add polygon column if missing (for existing DBs)
+    await client.query(`
+      ALTER TABLE cemetery_blocks
+      ADD COLUMN IF NOT EXISTS polygon JSONB DEFAULT '{}'::jsonb;
+    `);
+
+    // Cemetery plots table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS cemetery_plots (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        block_id UUID NOT NULL REFERENCES cemetery_blocks(id) ON DELETE CASCADE,
+        plot_number TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'AVAILABLE' 
+          CHECK (status IN ('AVAILABLE', 'RESERVED', 'OCCUPIED')),
+        map_coords JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(block_id, plot_number)
+      );
+    `);
+
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_cemetery_blocks_cemetery ON cemetery_blocks(cemetery_id);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_cemetery_blocks_sort ON cemetery_blocks(sort_order);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_cemetery_plots_block ON cemetery_plots(block_id);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_cemetery_plots_status ON cemetery_plots(status);`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_makam_plot_id ON makam(plot_id);`);
 
     // Dokumen table
     await client.query(`
