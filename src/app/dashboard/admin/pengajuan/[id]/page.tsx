@@ -31,6 +31,7 @@ interface Makam {
   applicant_name: string | null;
   applicant_phone: string | null;
   relationship: string | null;
+  plot_id: string | null;
   blok: string | null;
   nomor: string | null;
   status: string | null;
@@ -130,6 +131,7 @@ export default function PengajuanDetailPage({ params }: Props) {
     setLoading(true);
     setError(null);
     try {
+      // Fetch pengajuan with related data including cemetery/block/plot
       const { data, error: fetchError } = await supabase
         .from("pengajuan")
         .select("*, profiles(email, full_name, phone), makam(*), dokumen(*)")
@@ -163,13 +165,15 @@ export default function PengajuanDetailPage({ params }: Props) {
     return data?.signedUrl || "";
   }, [supabase.storage]);
 
-  const updateStatus = useCallback(async (newStatus: string, notes: string) => {
+  const updateStatus = useCallback(async (newStatus: string, notes: string, blockId?: string) => {
     setUpdating(true);
     try {
+      const body: Record<string, unknown> = { status: newStatus, notes };
+      if (blockId) body.block_id = blockId;
       const res = await fetch(`/api/admin/pengajuan/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, notes }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Gagal memperbarui status");
       await fetchData(id);
@@ -201,14 +205,9 @@ export default function PengajuanDetailPage({ params }: Props) {
     }
   }, [id, fetchData]);
 
-  const handleAllocate = useCallback(async (blok: string, nomor: string) => {
-    await updateStatus(pengajuan?.status || "PENDING", "");
-    const { error: updateError } = await supabase
-      .from("makam")
-      .update({ blok, nomor, status: "RESERVED" })
-      .eq("pengajuan_id", id);
-    if (updateError) throw updateError;
-  }, [id, pengajuan?.status, supabase, updateStatus]);
+  const handleAllocate = useCallback(async (blockId: string) => {
+    await updateStatus(pengajuan?.status || "PENDING", "", blockId);
+  }, [pengajuan?.status, updateStatus]);
 
   const handleRefresh = useCallback(() => {
     return fetchData(id);
@@ -320,6 +319,7 @@ export default function PengajuanDetailPage({ params }: Props) {
           {/* Grave Allocation */}
           <GraveAllocation
             pengajuanId={pengajuan.id}
+            currentPlotId={makamData?.plot_id || null}
             currentBlok={makamData?.blok || null}
             currentNomor={makamData?.nomor || null}
             graveStatus={makamData?.status || null}
