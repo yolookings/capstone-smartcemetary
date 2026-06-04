@@ -6,38 +6,47 @@ import { supabaseAdmin } from "./supabase";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CHUNKS_FILE = path.join(__dirname, "../../rag_chunks.json");
 
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL_NAME = process.env.AI_MODEL || "nvidia/llama-3.1-nemotron-70b-instruct:free";
+const PRIMARY_MODEL = process.env.AI_MODEL;
+const FALLBACK_MODEL = process.env.AI_FALLBACK_MODEL;
+const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS);
+
+if (!PRIMARY_MODEL || !FALLBACK_MODEL) {
+  throw new Error(
+    "[ai-rag] Critical: AI_MODEL or AI_FALLBACK_MODEL is not defined in environment variables!",
+  );
+}
 
 // Post-process AI response: normalize Markdown formatting for clean, professional display
 function normalizeMarkdown(text: string): string {
-  return text
-    // Normalize excessive blank lines
-    .replace(/\n{3,}/g, "\n\n")
-    // Ensure headings have proper spacing before them
-    .replace(/([^\n])\n(##+ )/g, "$1\n\n$2")
-    // Ensure headings have proper spacing after them
-    .replace(/(##+.+)\n(?!\n|$)/g, "$1\n")
-    // Normalize bullet markers to proper bullet points
-    .replace(/^[\-\*]\s+/gm, "• ")
-    // Normalize numbered list formats: "1)" → "1."
-    .replace(/^(\d+)\)\s+/gm, "$1. ")
-    // Remove checkbox markers (they're not needed for chat)
-    .replace(/^\[[ x]\]\s+/gim, "• ")
-    // Ensure spacing before lists (bullets or numbered)
-    .replace(/\n(• |\d+\. )/g, "\n\n$1")
-    // Ensure spacing before headings
-    .replace(/\n(##+ )/g, "\n\n$1")
-    // Ensure spacing before blockquotes
-    .replace(/\n(> )/g, "\n\n$1")
-    // Ensure spacing before horizontal rules
-    .replace(/\n(---)\n/g, "\n\n$1\n\n")
-    // Ensure table rows are separated properly
-    .replace(/\n(\|.+)\n(?!\|)/g, "\n$1\n")
-    // Collapse any triple+ newlines again (from double-processing)
-    .replace(/\n{3,}/g, "\n\n")
-    // Ensure the result doesn't start or end with whitespace
-    .trim();
+  return (
+    text
+      // Normalize excessive blank lines
+      .replace(/\n{3,}/g, "\n\n")
+      // Ensure headings have proper spacing before them
+      .replace(/([^\n])\n(##+ )/g, "$1\n\n$2")
+      // Ensure headings have proper spacing after them
+      .replace(/(##+.+)\n(?!\n|$)/g, "$1\n")
+      // Normalize bullet markers to proper bullet points
+      .replace(/^[\-\*]\s+/gm, "• ")
+      // Normalize numbered list formats: "1)" → "1."
+      .replace(/^(\d+)\)\s+/gm, "$1. ")
+      // Remove checkbox markers (they're not needed for chat)
+      .replace(/^\[[ x]\]\s+/gim, "• ")
+      // Ensure spacing before lists (bullets or numbered)
+      .replace(/\n(• |\d+\. )/g, "\n\n$1")
+      // Ensure spacing before headings
+      .replace(/\n(##+ )/g, "\n\n$1")
+      // Ensure spacing before blockquotes
+      .replace(/\n(> )/g, "\n\n$1")
+      // Ensure spacing before horizontal rules
+      .replace(/\n(---)\n/g, "\n\n$1\n\n")
+      // Ensure table rows are separated properly
+      .replace(/\n(\|.+)\n(?!\|)/g, "\n$1\n")
+      // Collapse any triple+ newlines again (from double-processing)
+      .replace(/\n{3,}/g, "\n\n")
+      // Ensure the result doesn't start or end with whitespace
+      .trim()
+  );
 }
 
 let cachedChunks: string[] = [];
@@ -77,7 +86,7 @@ function simpleSearch(
 }
 
 function buildConversationHistory(
-  history: { role: "user" | "ai"; content: string }[]
+  history: { role: "user" | "ai"; content: string }[],
 ): string {
   if (!history || history.length === 0) return "";
   return history
@@ -85,10 +94,58 @@ function buildConversationHistory(
     .join("\n");
 }
 
+async function callOpenRouter(
+  model: string,
+  messages: { role: string; content: string }[],
+  signal: AbortSignal,
+): Promise<string | null> {
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.3,
+      max_tokens: 1024,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error(
+      `[ai-rag] OpenRouter HTTP ${response.status} (${model}):`,
+      errorData,
+    );
+    return null;
+  }
+
+  const data = await response.json();
+
+  if (data.error) {
+    console.error(`[ai-rag] OpenRouter API error (${model}):`, data.error);
+    return null;
+  }
+
+  const content = data.choices?.[0]?.message?.content;
+  if (!content || content.trim().length === 0) {
+    console.warn(
+      `[ai-rag] Empty response from ${model}:`,
+      JSON.stringify(data).slice(0, 500),
+    );
+    return null;
+  }
+
+  return content;
+}
+
 export async function askAI(
   message: string,
   userId?: string,
-  conversationHistory?: { role: "user" | "ai"; content: string }[]
+  conversationHistory?: { role: "user" | "ai"; content: string }[],
 ) {
   const chunks = await loadChunks();
 
@@ -139,63 +196,68 @@ ATURAN FORMAT JAWABAN — INI SANGAT PENTING:
 [KONTEKS]:
 ${context}`;
 
-  try {
+  const historyText = buildConversationHistory(conversationHistory || []);
+  const historySection = historyText
+    ? `\n\n[RIWAYAT PERCAKAPAN SEBELUMNYA]:\n${historyText}\n`
+    : "";
+
+  const messages: { role: string; content: string }[] = [
+    { role: "system", content: systemPrompt },
+  ];
+
+  if (historySection) {
+    const updatedSystem = systemPrompt.replace(
+      "[KONTEKS]:",
+      `[KONTEKS]:${historySection}`,
+    );
+    messages[0] = { role: "system", content: updatedSystem };
+  }
+
+  messages.push({ role: "user", content: message });
+
+  const models = [PRIMARY_MODEL, FALLBACK_MODEL];
+  let aiResponse: string | null = null;
+
+  for (let attempt = 0; attempt < models.length; attempt++) {
+    const model = models[attempt];
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-    const historyText = buildConversationHistory(conversationHistory || []);
-    const historySection = historyText
-      ? `\n\n[RIWAYAT PERCAKAPAN SEBELUMNYA]:\n${historyText}\n`
-      : "";
-
-    const messages: { role: string; content: string }[] = [
-      { role: "system", content: systemPrompt },
-    ];
-
-    if (historySection) {
-      const updatedSystem = systemPrompt.replace(
-        "[KONTEKS]:",
-        `[KONTEKS]:${historySection}`
+    try {
+      console.log(
+        `[ai-rag] Attempt ${attempt + 1}/${models.length} with ${model}`,
       );
-      messages[0] = { role: "system", content: updatedSystem };
+      aiResponse = await callOpenRouter(model, messages, controller.signal);
+      clearTimeout(timeoutId);
+
+      if (aiResponse) {
+        console.log(`[ai-rag] ${model} succeeded`);
+        break;
+      }
+
+      console.warn(`[ai-rag] ${model} returned no content, trying fallback...`);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      const isTimeout =
+        error instanceof DOMException && error.name === "AbortError";
+      console.warn(
+        `[ai-rag] ${model} ${isTimeout ? "timed out" : "failed"}:`,
+        error,
+      );
+
+      if (attempt < models.length - 1) {
+        console.log(
+          `[ai-rag] Retrying with fallback ${models[attempt + 1]}...`,
+        );
+      }
     }
+  }
 
-    messages.push({ role: "user", content: message });
+  if (!aiResponse) {
+    aiResponse = "Maaf, layanan AI sedang sibuk. Silakan coba lagi nanti.";
+  }
 
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL_NAME,
-        messages,
-        temperature: 0.3,
-        max_tokens: 1024,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("OpenRouter API error:", response.status, errorData);
-      return `Maaf, layanan AI sedang sibuk (${response.status}). Silakan coba lagi sebentar.`;
-    }
-
-    const data = await response.json();
-    
-    if (data.error) {
-      console.error("OpenRouter error:", data.error);
-      return `Maaf, terjadi kesalahan: ${data.error.message || "Unknown error"}`;
-    }
-
-    const aiResponse =
-      data.choices?.[0]?.message?.content ||
-      "Maaf, saya terlalu lama merespon. Cobain lagi.";
-
+  try {
     await supabaseAdmin.from("chat_logs").insert([
       {
         user_id: userId || null,
@@ -203,10 +265,9 @@ ${context}`;
         response: aiResponse,
       },
     ]);
-
-    return normalizeMarkdown(aiResponse);
-  } catch (error) {
-    console.error("RAG AI Error:", error);
-    return "Maaf, terjadi gangguan pada sistem AI.";
+  } catch (err) {
+    console.error("[ai-rag] Failed to log chat:", err);
   }
+
+  return normalizeMarkdown(aiResponse);
 }

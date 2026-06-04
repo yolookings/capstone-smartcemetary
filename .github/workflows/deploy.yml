@@ -54,35 +54,61 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/capstone-smartcemetary
-            
-            # 1. Pull the latest code for the pushed branch
-            git fetch origin
-            git checkout ${{ github.ref_name }}
-            git pull origin ${{ github.ref_name }}
-            
-            # 2. Install dependencies and build Next.js
-            npm install
-            npm run build
-            
-            # 3. Determine the PM2 app name and target port dynamically based on Git branch
-            if [ "${{ github.ref_name }}" = "main" ]; then
-              PM2_APP="smartcemetary"
-              PORT=3000
-            else
-              PM2_APP="smartcemetary-staging"
-              PORT=3001
-            fi
-            
-            # 4. Restart or start the PM2 app safely (prevents failure if it doesn't exist)
-            if pm2 list | grep -q "$PM2_APP"; then
-              echo "App '$PM2_APP' is currently running. Restarting..."
-              pm2 restart "$PM2_APP"
-            else
-              echo "App '$PM2_APP' is not running. Starting a new process on port $PORT..."
-              PORT=$PORT pm2 start npm --name "$PM2_APP" -- run start
-            fi
-            
-            # 5. Persist the PM2 process list
-            pm2 save
+          # Mendaftarkan semua variabel agar bisa dibaca di dalam blok perintah 'script'
+          envs: AI_MODEL,AI_FALLBACK_MODEL,AI_TIMEOUT_MS,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,DATABASE_URL,NEXTAUTH_SECRET,NEXTAUTH_URL
+        env:
+          # Diambil dari GitHub Secrets (Aman & Tersembunyi dari repositori publik)
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          AI_FALLBACK_MODEL: ${{ secrets.AI_FALLBACK_MODEL }}
+          AI_TIMEOUT_MS: ${{ secrets.AI_TIMEOUT_MS }}
+          # Diambil dari blok global 'env' di atas file ini
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ env.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ env.NEXTAUTH_URL }}
+        script: |
+          cd ~/capstone-smartcemetary
+
+          # 1. Pull the terbaru sesuai branch yang di-push (dev / main)
+          git fetch origin
+          git checkout ${{ github.ref_name }}
+          git pull origin ${{ github.ref_name }}
+
+          # 2. Membuat & Memperbarui file .env secara otomatis di VPS
+          # Tanda '>' akan membuat file baru / menimpa isi lama. Tanda '>>' menambahkan baris baru di bawahnya.
+          echo "AI_MODEL=${AI_MODEL}" > .env
+          echo "AI_FALLBACK_MODEL=${AI_FALLBACK_MODEL}" >> .env
+          echo "AI_TIMEOUT_MS=${AI_TIMEOUT_MS}" >> .env
+          echo "NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}" >> .env
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}" >> .env
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}" >> .env
+          echo "DATABASE_URL=${DATABASE_URL}" >> .env
+          echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> .env
+          echo "NEXTAUTH_URL=${NEXTAUTH_URL}" >> .env
+
+          # 3. Install dependencies dan build Next.js di VPS menggunakan .env yang baru dibuat
+          npm install
+          npm run build
+
+          # 4. Menentukan nama aplikasi PM2 dan port berdasarkan branch git secara dinamis
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            PM2_APP="smartcemetary"
+            PORT=3000
+          else
+            PM2_APP="smartcemetary-staging"
+            PORT=3001
+          fi
+
+          # 5. Restart atau jalankan proses PM2 baru dengan aman
+          if pm2 list | grep -q "$PM2_APP"; then
+            echo "Aplikasi '$PM2_APP' sedang berjalan. Melakukan restart..."
+            pm2 restart "$PM2_APP"
+          else
+            echo "Aplikasi '$PM2_APP' tidak ditemukan. Menjalankan proses PM2 baru di port $PORT..."
+            PORT=$PORT pm2 start npm --name "$PM2_APP" -- run start
+          fi
+
+          # 6. Menyimpan konfigurasi daftar PM2 agar otomatis running jika VPS restart
+          pm2 save
