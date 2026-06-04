@@ -218,11 +218,11 @@ ${context}`;
 
   messages.push({ role: "user", content: message });
 
-  const models = [PRIMARY_MODEL, FALLBACK_MODEL];
+  const models = [PRIMARY_MODEL, FALLBACK_MODEL] as string[];
   let aiResponse: string | null = null;
 
   for (let attempt = 0; attempt < models.length; attempt++) {
-    const model = models[attempt];
+    const model = models[attempt]; // Sekarang 'model' otomatis bertipe murni 'string'
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
