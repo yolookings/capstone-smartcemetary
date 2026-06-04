@@ -16,7 +16,7 @@ env:
   SUPABASE_SERVICE_ROLE_KEY: "mock-service-role-key"
   DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
   NEXTAUTH_SECRET: "mock-nextauth-secret-key-32-characters"
-  NEXTAUTH_URL: "http://localhost:3000"
+  NEXTAUTH_URL: "https://smartcemetary.web.id/"
 
 jobs:
   ci:
