@@ -9,15 +9,11 @@ const CHUNKS_FILE = path.join(__dirname, "../../rag_chunks.json");
 const OPENROUTER_API_URL =
   process.env.OPENROUTER_API_URL ||
   "https://openrouter.ai/api/v1/chat/completions";
-const PRIMARY_MODEL = process.env.AI_MODEL;
-const FALLBACK_MODEL = process.env.AI_FALLBACK_MODEL;
+const PRIMARY_MODEL =
+  process.env.AI_MODEL || "nvidia/nemotron-nano-9b-v2:free";
+const FALLBACK_MODEL =
+  process.env.AI_FALLBACK_MODEL || "nvidia/nemotron-3-nano-30b-a3b:free";
 const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 50_000;
-
-if (!PRIMARY_MODEL || !FALLBACK_MODEL) {
-  throw new Error(
-    "[ai-rag] Critical: AI_MODEL or AI_FALLBACK_MODEL is not defined in environment variables!",
-  );
-}
 
 // Post-process AI response: normalize Markdown formatting for clean, professional display
 function normalizeMarkdown(text: string): string {
@@ -133,7 +129,12 @@ async function callOpenRouter(
     return null;
   }
 
-  const content = data.choices?.[0]?.message?.content;
+  const msg = data.choices?.[0]?.message;
+  let content = msg?.content;
+  // Reasoning models (e.g. Nemotron) put the response in `reasoning` field
+  if ((!content || content.trim().length === 0) && msg?.reasoning) {
+    content = msg.reasoning;
+  }
   if (!content || content.trim().length === 0) {
     console.warn(
       `[ai-rag] Empty response from ${model}:`,
@@ -222,7 +223,7 @@ ${context}`;
   let aiResponse: string | null = null;
 
   for (let attempt = 0; attempt < models.length; attempt++) {
-    const model = models[attempt]; // Sekarang 'model' otomatis bertipe murni 'string'
+    const model = models[attempt];
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
