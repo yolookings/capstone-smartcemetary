@@ -1,9 +1,25 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { MapPin, Search, RefreshCw, Wifi, WifiOff, List, Edit3, Save, X, Loader2 } from "lucide-react";
+import {
+  MapPin,
+  Search,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  List,
+  Edit3,
+  Save,
+  X,
+  Loader2,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { CemeteryLeafletMap, type CemeteryGeo, type BlockGeo, type PlotGeo } from "@/components/cemetery-leaflet-map";
+import {
+  CemeteryLeafletMap,
+  type CemeteryGeo,
+  type BlockGeo,
+  type PlotGeo,
+} from "@/components/cemetery-leaflet-map";
 
 interface RawPlot {
   id: string;
@@ -42,10 +58,13 @@ function toLatLng(coord: number[]): [number, number] {
 function parseBlockGeo(
   rawCoords: Record<string, unknown>,
   rawPolygon: Record<string, unknown> | null,
-): { polygon: [number, number][]; center?: [number, number]; plotsPerRow?: number; plotRows?: number } {
-  // Prefer dedicated `polygon` column over `map_coords`
+): {
+  polygon: [number, number][];
+  center?: [number, number];
+  plotsPerRow?: number;
+  plotRows?: number;
+} {
   const source = (rawPolygon || rawCoords) as Record<string, unknown>;
-  // GeoJSON Feature with Polygon geometry
   if (source.type === "Feature" && source.geometry) {
     const geom = source.geometry as Record<string, unknown>;
     if (geom.type === "Polygon") {
@@ -61,13 +80,14 @@ function parseBlockGeo(
       };
     }
   }
-  // Legacy SVG coords
   return { polygon: [] };
 }
 
-function parsePlotGeo(
-  rawCoords: Record<string, unknown>,
-): { coordinates: [number, number]; cellWidth?: number; cellHeight?: number } {
+function parsePlotGeo(rawCoords: Record<string, unknown>): {
+  coordinates: [number, number];
+  cellWidth?: number;
+  cellHeight?: number;
+} {
   const coords = rawCoords as Record<string, unknown>;
   if (coords.type === "Point") {
     const xy = coords.coordinates as number[];
@@ -78,13 +98,14 @@ function parsePlotGeo(
       cellHeight: props.cellHeight as number | undefined,
     };
   }
-  // Legacy SVG coords — fallback to center-ish
   return { coordinates: [0, 0] as [number, number] };
 }
 
-function parseCemeteryMapConfig(
-  config: Record<string, unknown>,
-): { center: [number, number]; zoom: number; boundary?: [number, number][] } {
+function parseCemeteryMapConfig(config: Record<string, unknown>): {
+  center: [number, number];
+  zoom: number;
+  boundary?: [number, number][];
+} {
   const c = config as Record<string, unknown>;
   const centerArr = c.center as number[] | undefined;
   const boundaryArr = c.boundary as number[][] | undefined;
@@ -102,12 +123,17 @@ export default function AdminCemeteryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
-  const [selectedCemeteryId, setSelectedCemeteryId] = useState<string | null>(null);
+  const [selectedCemeteryId, setSelectedCemeteryId] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "checking">("checking");
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connected" | "disconnected" | "checking"
+  >("checking");
 
-  // ── Polygon editing state ────────────────────────────────
-  const [polygonEditBlockId, setPolygonEditBlockId] = useState<string | null>(null);
+  const [polygonEditBlockId, setPolygonEditBlockId] = useState<string | null>(
+    null,
+  );
   const [polygonEditCoords, setPolygonEditCoords] = useState<string>("");
   const [polygonSaving, setPolygonSaving] = useState(false);
   const [polygonSaveError, setPolygonSaveError] = useState<string | null>(null);
@@ -150,21 +176,26 @@ export default function AdminCemeteryPage() {
     fetchData();
   }, []);
 
-  // Build CemeteryGeo[] from raw plot data
   const cemeteryMapData = useMemo(() => {
     const cemMap = new Map<string, CemeteryGeo>();
     const blockMap = new Map<string, BlockGeo>();
-    const plotMap = new Map<string, PlotGeo[]>();
 
     for (const plot of rawPlots) {
-      const block = (Array.isArray(plot.cemetery_blocks) ? plot.cemetery_blocks[0] : plot.cemetery_blocks) || {};
-      const cemetery = (Array.isArray(block.cemeteries) ? block.cemeteries[0] : block.cemeteries) || {};
+      const block =
+        (Array.isArray(plot.cemetery_blocks)
+          ? plot.cemetery_blocks[0]
+          : plot.cemetery_blocks) || {};
+      const cemetery =
+        (Array.isArray(block.cemeteries)
+          ? block.cemeteries[0]
+          : block.cemeteries) || {};
 
       if (!cemetery.id || !block.id) continue;
 
-      // Init cemetery
       if (!cemMap.has(cemetery.id)) {
-        const mc = parseCemeteryMapConfig((cemetery.map_config || {}) as Record<string, unknown>);
+        const mc = parseCemeteryMapConfig(
+          (cemetery.map_config || {}) as Record<string, unknown>,
+        );
         cemMap.set(cemetery.id, {
           id: cemetery.id,
           name: cemetery.name || "",
@@ -176,7 +207,6 @@ export default function AdminCemeteryPage() {
         });
       }
 
-      // Init block
       const blockKey = `${cemetery.id}:${block.id}`;
       if (!blockMap.has(blockKey)) {
         const bc = parseBlockGeo(
@@ -195,8 +225,9 @@ export default function AdminCemeteryPage() {
         cemMap.get(cemetery.id)!.blocks.push(bg);
       }
 
-      // Add plot
-      const pg = parsePlotGeo((plot.map_coords || {}) as Record<string, unknown>);
+      const pg = parsePlotGeo(
+        (plot.map_coords || {}) as Record<string, unknown>,
+      );
       const plotGeo: PlotGeo = {
         id: plot.id,
         plotNumber: plot.plot_number,
@@ -208,27 +239,39 @@ export default function AdminCemeteryPage() {
       blockMap.get(blockKey)!.plots.push(plotGeo);
     }
 
-    // Update available counts
     for (const [, bg] of blockMap) {
-      bg.availableCount = bg.plots.filter((p) => p.status === "AVAILABLE").length;
+      bg.availableCount = bg.plots.filter(
+        (p) => p.status === "AVAILABLE",
+      ).length;
     }
 
     return Array.from(cemMap.values());
   }, [rawPlots]);
 
-  // Filtered data for list view
   const filteredPlots = useMemo(() => {
     let filtered = rawPlots;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter((p) => {
-        const block = (Array.isArray(p.cemetery_blocks) ? p.cemetery_blocks[0] : p.cemetery_blocks) || {};
-        const cemetery = (Array.isArray(block.cemeteries) ? block.cemeteries[0] : block.cemeteries) || {};
+        const block =
+          (Array.isArray(p.cemetery_blocks)
+            ? p.cemetery_blocks[0]
+            : p.cemetery_blocks) || {};
+        const cemetery =
+          (Array.isArray(block.cemeteries)
+            ? block.cemeteries[0]
+            : block.cemeteries) || {};
         return (
           String(p.plot_number).toLowerCase().includes(q) ||
-          String(block.code || "").toLowerCase().includes(q) ||
-          String(block.name || "").toLowerCase().includes(q) ||
-          String(cemetery.name || "").toLowerCase().includes(q)
+          String(block.code || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(block.name || "")
+            .toLowerCase()
+            .includes(q) ||
+          String(cemetery.name || "")
+            .toLowerCase()
+            .includes(q)
         );
       });
     }
@@ -245,24 +288,6 @@ export default function AdminCemeteryPage() {
     occupied: rawPlots.filter((p) => p.status === "OCCUPIED").length,
   };
 
-  const groupedByCemetery = useMemo(() => {
-    const groups: Record<string, { cemetery: string; blocks: Record<string, RawPlot[]> }> = {};
-    for (const plot of filteredPlots) {
-      const block = (Array.isArray(plot.cemetery_blocks) ? plot.cemetery_blocks[0] : plot.cemetery_blocks) || {};
-      const cemetery = (Array.isArray(block.cemeteries) ? block.cemeteries[0] : block.cemeteries) || {};
-      const cemKey = String(cemetery.id);
-      const blockKey = `${cemKey}:${plot.block_id}`;
-      if (!groups[cemKey]) {
-        groups[cemKey] = { cemetery: String(cemetery.name || ""), blocks: {} };
-      }
-      if (!groups[cemKey].blocks[blockKey]) {
-        groups[cemKey].blocks[blockKey] = [];
-      }
-      groups[cemKey].blocks[blockKey].push(plot);
-    }
-    return groups;
-  }, [filteredPlots]);
-
   const activeCemeteryData = useMemo(() => {
     if (!selectedCemeteryId) return cemeteryMapData[0] || null;
     return cemeteryMapData.find((c) => c.id === selectedCemeteryId) || null;
@@ -270,14 +295,17 @@ export default function AdminCemeteryPage() {
 
   const getStatusLabel = (s: string) => {
     switch (s) {
-      case "AVAILABLE": return "Tersedia";
-      case "RESERVED": return "Dipesan";
-      case "OCCUPIED": return "Terisi";
-      default: return s;
+      case "AVAILABLE":
+        return "Tersedia";
+      case "RESERVED":
+        return "Dipesan";
+      case "OCCUPIED":
+        return "Terisi";
+      default:
+        return s;
     }
   };
 
-  // ── Polygon editor handlers ──────────────────────────────
   const handleOpenPolygonEditor = useCallback(() => {
     if (polygonEditBlockId) {
       setPolygonEditBlockId(null);
@@ -285,11 +313,12 @@ export default function AdminCemeteryPage() {
       setPolygonSaveSuccess(false);
       return;
     }
-    // Pick first block from active cemetery data
     const firstBlock = activeCemeteryData?.blocks?.[0];
     if (!firstBlock) return;
     setPolygonEditBlockId(firstBlock.id);
-    setPolygonEditCoords(firstBlock.polygon.map((p) => `${p[1]},${p[0]}`).join("\n"));
+    setPolygonEditCoords(
+      firstBlock.polygon.map((p) => `${p[1]},${p[0]}`).join("\n"),
+    );
     setPolygonSaveError(null);
     setPolygonSaveSuccess(false);
   }, [polygonEditBlockId, activeCemeteryData]);
@@ -310,11 +339,12 @@ export default function AdminCemeteryPage() {
       const coordinates: number[][] = lines.map((line) => {
         const parts = line.split(",").map(Number);
         if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) {
-          throw new Error(`Format koordinat tidak valid: "${line}". Gunakan format: lng,lat`);
+          throw new Error(
+            `Format koordinat tidak valid: "${line}". Gunakan format: lng,lat`,
+          );
         }
         return parts;
       });
-      // Close the ring
       coordinates.push(coordinates[0]);
 
       const polygonFeature = {
@@ -326,11 +356,14 @@ export default function AdminCemeteryPage() {
         properties: {},
       };
 
-      const res = await fetch(`/api/admin/blocks/${polygonEditBlockId}/polygon`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ polygon: polygonFeature }),
-      });
+      const res = await fetch(
+        `/api/admin/blocks/${polygonEditBlockId}/polygon`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ polygon: polygonFeature }),
+        },
+      );
 
       if (!res.ok) {
         const errData = await res.json();
@@ -341,7 +374,9 @@ export default function AdminCemeteryPage() {
       setTimeout(() => setPolygonSaveSuccess(false), 3000);
       fetchData(true);
     } catch (err) {
-      setPolygonSaveError(err instanceof Error ? err.message : "Gagal menyimpan");
+      setPolygonSaveError(
+        err instanceof Error ? err.message : "Gagal menyimpan",
+      );
     } finally {
       setPolygonSaving(false);
     }
@@ -363,7 +398,9 @@ export default function AdminCemeteryPage() {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <WifiOff className="text-red-500" size={40} />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Gagal Memuat Data</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">
+            Gagal Memuat Data
+          </h2>
           <p className="text-slate-500 mb-6">{error}</p>
           <button
             onClick={() => fetchData(true)}
@@ -381,18 +418,26 @@ export default function AdminCemeteryPage() {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Monitoring Pemakaman</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+            Monitoring Pemakaman
+          </h1>
           <p className="text-slate-500 text-sm mt-1">
             Pantau ketersediaan dan penggunaan petak makam
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-            connectionStatus === "connected"
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-red-100 text-red-700"
-          }`}>
-            {connectionStatus === "connected" ? <Wifi size={14} /> : <WifiOff size={14} />}
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+              connectionStatus === "connected"
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {connectionStatus === "connected" ? (
+              <Wifi size={14} />
+            ) : (
+              <WifiOff size={14} />
+            )}
             {connectionStatus === "connected" ? "Terhubung" : "Terputus"}
           </div>
           <button
@@ -424,7 +469,9 @@ export default function AdminCemeteryPage() {
               <MapPin className="text-emerald-600" size={24} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{stats.available}</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {stats.available}
+              </p>
               <p className="text-sm text-slate-500">Tersedia</p>
             </div>
           </div>
@@ -435,7 +482,9 @@ export default function AdminCemeteryPage() {
               <MapPin className="text-amber-600" size={24} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{stats.reserved}</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {stats.reserved}
+              </p>
               <p className="text-sm text-slate-500">Dipesan</p>
             </div>
           </div>
@@ -446,14 +495,16 @@ export default function AdminCemeteryPage() {
               <MapPin className="text-rose-600" size={24} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{stats.occupied}</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {stats.occupied}
+              </p>
               <p className="text-sm text-slate-500">Terisi</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Polygon Editor Panel ──────────────────────────────── */}
+      {/* Polygon Editor Panel */}
       {polygonEditBlockId && (
         <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-amber-100 flex items-center justify-between bg-amber-50">
@@ -462,7 +513,11 @@ export default function AdminCemeteryPage() {
               <h3 className="font-bold text-slate-900">Edit Polygon Blok</h3>
             </div>
             <button
-              onClick={() => { setPolygonEditBlockId(null); setPolygonSaveError(null); setPolygonSaveSuccess(false); }}
+              onClick={() => {
+                setPolygonEditBlockId(null);
+                setPolygonSaveError(null);
+                setPolygonSaveSuccess(false);
+              }}
               className="p-1.5 hover:bg-amber-100 rounded-lg transition-colors"
             >
               <X size={18} className="text-slate-400" />
@@ -488,16 +543,24 @@ export default function AdminCemeteryPage() {
                 className="px-5 py-2.5 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {polygonSaving ? (
-                  <><Loader2 size={16} className="animate-spin" /> Menyimpan...</>
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Menyimpan...
+                  </>
                 ) : (
-                  <><Save size={16} /> Simpan Polygon</>
+                  <>
+                    <Save size={16} /> Simpan Polygon
+                  </>
                 )}
               </button>
               {polygonSaveSuccess && (
-                <span className="text-xs font-bold text-emerald-600">Polygon berhasil disimpan!</span>
+                <span className="text-xs font-bold text-emerald-600">
+                  Polygon berhasil disimpan!
+                </span>
               )}
               {polygonSaveError && (
-                <span className="text-xs font-bold text-rose-600">{polygonSaveError}</span>
+                <span className="text-xs font-bold text-rose-600">
+                  {polygonSaveError}
+                </span>
               )}
             </div>
           </div>
@@ -509,23 +572,32 @@ export default function AdminCemeteryPage() {
         <div className="p-6 border-b border-slate-100">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <h3 className="font-bold text-slate-900 text-lg">Peta Pemakaman</h3>
+              <h3 className="font-bold text-slate-900 text-lg">
+                Peta Pemakaman
+              </h3>
               {cemeteryMapData.length > 1 && (
                 <select
                   value={selectedCemeteryId || ""}
-                  onChange={(e) => setSelectedCemeteryId(e.target.value || null)}
+                  onChange={(e) =>
+                    setSelectedCemeteryId(e.target.value || null)
+                  }
                   className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">Semua Pemakaman</option>
                   {cemeteryMapData.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
               )}
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                />
                 <input
                   type="text"
                   placeholder="Cari blok atau nomor..."
@@ -592,67 +664,98 @@ export default function AdminCemeteryPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      <th className="text-left px-6 py-4">Pemakaman</th>
-                      <th className="text-left px-6 py-4">Blok</th>
-                      <th className="text-left px-6 py-4">Petak</th>
-                      <th className="text-left px-6 py-4">Status</th>
-                      <th className="text-left px-6 py-4">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {(() => {
-                      const shownBlocks = new Set<string>();
-                      return filteredPlots.map((plot) => {
-                        const block = (Array.isArray(plot.cemetery_blocks) ? plot.cemetery_blocks[0] : plot.cemetery_blocks) || {};
-                        const cemetery = (Array.isArray(block.cemeteries) ? block.cemeteries[0] : block.cemeteries) || {};
-                        const isFirstInBlock = !shownBlocks.has(plot.block_id);
-                        shownBlocks.add(plot.block_id);
-                        return (
-                          <tr key={plot.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-medium text-slate-900">{String(cemetery.name || "")}</td>
-                            <td className="px-6 py-4 text-slate-600">{String(block.name || "")}</td>
-                            <td className="px-6 py-4 text-slate-600">{plot.plot_number}</td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                <thead>
+                  <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="text-left px-6 py-4">Pemakaman</th>
+                    <th className="text-left px-6 py-4">Blok</th>
+                    <th className="text-left px-6 py-4">Petak</th>
+                    <th className="text-left px-6 py-4">Status</th>
+                    <th className="text-left px-6 py-4">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {(() => {
+                    const shownBlocks = new Set<string>();
+                    return filteredPlots.map((plot) => {
+                      const block =
+                        (Array.isArray(plot.cemetery_blocks)
+                          ? plot.cemetery_blocks[0]
+                          : plot.cemetery_blocks) || {};
+                      const cemetery =
+                        (Array.isArray(block.cemeteries)
+                          ? block.cemeteries[0]
+                          : block.cemeteries) || {};
+                      const isFirstInBlock = !shownBlocks.has(plot.block_id);
+                      shownBlocks.add(plot.block_id);
+                      return (
+                        <tr
+                          key={plot.id}
+                          className="hover:bg-slate-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 font-medium text-slate-900">
+                            {String(cemetery.name || "")}
+                          </td>
+                          <td className="px-6 py-4 text-slate-600">
+                            {String(block.name || "")}
+                          </td>
+                          <td className="px-6 py-4 text-slate-600">
+                            {plot.plot_number}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
                                 plot.status === "AVAILABLE"
                                   ? "bg-emerald-100 text-emerald-700"
                                   : plot.status === "RESERVED"
                                     ? "bg-amber-100 text-amber-700"
                                     : "bg-rose-100 text-rose-700"
-                              }`}>
-                                {getStatusLabel(plot.status)}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              {isFirstInBlock && (
-                                <button
-                                  onClick={() => {
-                                    const blockPolygon = (block.polygon || block.map_coords) as Record<string, unknown> | null;
-                                    if (blockPolygon) {
-                                      const parsed = parseBlockGeo(
-                                        block.map_coords as Record<string, unknown>,
-                                        block.polygon as Record<string, unknown> | null,
-                                      );
-                                      setPolygonEditBlockId(plot.block_id);
-                                      setPolygonEditCoords(parsed.polygon.map((p) => `${p[1]},${p[0]}`).join("\n"));
-                                      setPolygonSaveError(null);
-                                      setPolygonSaveSuccess(false);
-                                    }
-                                  }}
-                                  className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                                  title="Edit Polygon Blok"
-                                >
-                                  <Edit3 size={14} />
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      });
-                    })()}
-                  </tbody>
+                              }`}
+                            >
+                              {getStatusLabel(plot.status)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            {isFirstInBlock && (
+                              <button
+                                onClick={() => {
+                                  const blockPolygon = (block.polygon ||
+                                    block.map_coords) as Record<
+                                    string,
+                                    unknown
+                                  > | null;
+                                  if (blockPolygon) {
+                                    const parsed = parseBlockGeo(
+                                      block.map_coords as Record<
+                                        string,
+                                        unknown
+                                      >,
+                                      block.polygon as Record<
+                                        string,
+                                        unknown
+                                      > | null,
+                                    );
+                                    setPolygonEditBlockId(plot.block_id);
+                                    setPolygonEditCoords(
+                                      parsed.polygon
+                                        .map((p) => `${p[1]},${p[0]}`)
+                                        .join("\n"),
+                                    );
+                                    setPolygonSaveError(null);
+                                    setPolygonSaveSuccess(false);
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                                title="Edit Polygon Blok"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
               </table>
             </div>
           )
@@ -661,8 +764,12 @@ export default function AdminCemeteryPage() {
             <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <MapPin className="text-slate-300" size={40} />
             </div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">Tidak ada data</h3>
-            <p className="text-slate-500 text-sm">Data pemakaman akan muncul di sini</p>
+            <h3 className="text-lg font-semibold text-slate-700 mb-2">
+              Tidak ada data
+            </h3>
+            <p className="text-slate-500 text-sm">
+              Data pemakaman akan muncul di sini
+            </p>
           </div>
         )}
       </div>
