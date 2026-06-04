@@ -6,10 +6,12 @@ import { supabaseAdmin } from "./supabase";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CHUNKS_FILE = path.join(__dirname, "../../rag_chunks.json");
 
-const OPENROUTER_API_URL = process.env.OPENROUTER_API_URL;
+const OPENROUTER_API_URL =
+  process.env.OPENROUTER_API_URL ||
+  "https://openrouter.ai/api/v1/chat/completions";
 const PRIMARY_MODEL = process.env.AI_MODEL;
 const FALLBACK_MODEL = process.env.AI_FALLBACK_MODEL;
-const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS);
+const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 50_000;
 
 if (!PRIMARY_MODEL || !FALLBACK_MODEL) {
   throw new Error(
@@ -112,7 +114,7 @@ async function callOpenRouter(
       temperature: 0.3,
       max_tokens: 1024,
     }),
-    signal,
+    signal: signal as AbortSignal,
   });
 
   if (!response.ok) {
@@ -262,8 +264,8 @@ ${context}`;
     await supabaseAdmin.from("chat_logs").insert([
       {
         user_id: userId || null,
-        message: message || "",
-        response: aiResponse || "",
+        message: message ?? "",
+        response: aiResponse,
       },
     ]);
   } catch (err) {
