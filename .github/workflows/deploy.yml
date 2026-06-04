@@ -50,12 +50,8 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: AI_MODEL,AI_FALLBACK_MODEL,AI_TIMEOUT_MS,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,DATABASE_URL,NEXTAUTH_SECRET,NEXTAUTH_URL
         env:
+          # Blok env diletakkan di sini (sejajar dengan 'with')
           AI_MODEL: ${{ secrets.AI_MODEL }}
           AI_FALLBACK_MODEL: ${{ secrets.AI_FALLBACK_MODEL }}
           AI_TIMEOUT_MS: ${{ secrets.AI_TIMEOUT_MS }}
@@ -65,45 +61,50 @@ jobs:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           NEXTAUTH_SECRET: ${{ env.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ env.NEXTAUTH_URL }}
-        script: |
-          cd ~/capstone-smartcemetary
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: AI_MODEL,AI_FALLBACK_MODEL,AI_TIMEOUT_MS,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,DATABASE_URL,NEXTAUTH_SECRET,NEXTAUTH_URL
+          script: |
+            cd ~/capstone-smartcemetary
 
-          # 1. Pull terbaru sesuai branch yang di-push
-          git fetch origin
-          git checkout ${{ github.ref_name }}
-          git pull origin ${{ github.ref_name }}
+            # 1. Pull terbaru sesuai branch yang di-push
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
 
-          # 2. Membuat & Memperbarui file .env di VPS
-          echo "AI_MODEL=${AI_MODEL}" > .env
-          echo "AI_FALLBACK_MODEL=${AI_FALLBACK_MODEL}" >> .env
-          echo "AI_TIMEOUT_MS=${AI_TIMEOUT_MS}" >> .env
-          echo "NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}" >> .env
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}" >> .env
-          echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}" >> .env
-          echo "DATABASE_URL=${DATABASE_URL}" >> .env
-          echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> .env
-          echo "NEXTAUTH_URL=${NEXTAUTH_URL}" >> .env
+            # 2. Membuat & Memperbarui file .env di VPS
+            echo "AI_MODEL=${AI_MODEL}" > .env
+            echo "AI_FALLBACK_MODEL=${AI_FALLBACK_MODEL}" >> .env
+            echo "AI_TIMEOUT_MS=${AI_TIMEOUT_MS}" >> .env
+            echo "NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}" >> .env
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}" >> .env
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}" >> .env
+            echo "DATABASE_URL=${DATABASE_URL}" >> .env
+            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> .env
+            echo "NEXTAUTH_URL=${NEXTAUTH_URL}" >> .env
 
-          # 3. Install dan build
-          npm install
-          npm run build
+            # 3. Install dan build
+            npm install
+            npm run build
 
-          # 4. Dinamis Port & Nama PM2
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            PM2_APP="smartcemetary"
-            PORT=3000
-          else
-            PM2_APP="smartcemetary-staging"
-            PORT=3001
-          fi
+            # 4. Dinamis Port & Nama PM2
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              PM2_APP="smartcemetary"
+              PORT=3000
+            else
+              PM2_APP="smartcemetary-staging"
+              PORT=3001
+            fi
 
-          # 5. Jalankan aplikasi via PM2
-          if pm2 list | grep -q "$PM2_APP"; then
-            echo "Aplikasi '$PM2_APP' sedang berjalan. Melakukan restart..."
-            pm2 restart "$PM2_APP"
-          else
-            echo "Aplikasi '$PM2_APP' tidak ditemukan. Menjalankan proses PM2 baru di port $PORT..."
-            PORT=$PORT pm2 start npm --name "$PM2_APP" -- run start
-          fi
+            # 5. Jalankan aplikasi via PM2
+            if pm2 list | grep -q "$PM2_APP"; then
+              echo "Aplikasi '$PM2_APP' sedang berjalan. Melakukan restart..."
+              pm2 restart "$PM2_APP"
+            else
+              echo "Aplikasi '$PM2_APP' tidak ditemukan. Menjalankan proses PM2 baru di port $PORT..."
+              PORT=$PORT pm2 start npm --name "$PM2_APP" -- run start
+            fi
 
-          pm2 save
+            pm2 save
