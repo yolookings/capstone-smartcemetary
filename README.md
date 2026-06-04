@@ -368,7 +368,7 @@ ADMIN_WHATSAPP_NUMBER="6281234567890"
 
 # ── Auth (Optional — auto-generated if omitted) ────────────────
 NEXTAUTH_SECRET="random-secret-string-32-characters"
-NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_URL="https://smartcemetary.web.id/"
 ```
 
 ### Local Development Setup
