@@ -6,6 +6,7 @@ import { supabaseAdmin } from "./supabase";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CHUNKS_FILE = path.join(__dirname, "../../rag_chunks.json");
 
+const OPENROUTER_API_URL = process.env.OPENROUTER_API_URL;
 const PRIMARY_MODEL = process.env.AI_MODEL;
 const FALLBACK_MODEL = process.env.AI_FALLBACK_MODEL;
 const TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS);
@@ -261,8 +262,8 @@ ${context}`;
     await supabaseAdmin.from("chat_logs").insert([
       {
         user_id: userId || null,
-        message: message,
-        response: aiResponse,
+        message: message || "",
+        response: aiResponse || "",
       },
     ]);
   } catch (err) {
