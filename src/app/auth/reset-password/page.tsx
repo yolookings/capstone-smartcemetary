@@ -1,10 +1,18 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
-import { Lock, Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { type EmailOtpType } from "@supabase/supabase-js";
+import {
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
 
 function ResetPasswordContent() {
   const [password, setPassword] = useState("");
@@ -17,51 +25,114 @@ function ResetPasswordContent() {
   const [tokenError, setTokenError] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   useEffect(() => {
-    const processToken = async () => {
-      // Check URL hash first (Supabase default)
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const tryEstablishSession = async () => {
+      // ── Step 1: Check if already have a session (e.g. from callback redirect) ──
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (existingSession) {
+        setIsReady(true);
+        return;
+      }
+
+      // ── Step 2: Try URL hash parameters (implicit flow fallback) ──
+      const hashParams = new URLSearchParams(
+        window.location.hash.substring(1)
+      );
       let accessToken = hashParams.get("access_token");
       let refreshToken = hashParams.get("refresh_token");
       let type = hashParams.get("type");
 
-      // If not in hash, check query params (some Supabase configs use this)
+      // ── Step 3: Try query parameters (PKCE / token_hash flow) ──
+      const queryTokenHash = searchParams.get("token_hash");
+      const queryType = searchParams.get("type") as EmailOtpType | null;
+      const queryCode = searchParams.get("code");
+      const queryAccessToken =
+        searchParams.get("access_token") || searchParams.get("token");
+      const queryRefreshToken = searchParams.get("refresh_token");
+
+      // Fallback to query params if not in hash
       if (!accessToken) {
-        const queryParams = new URLSearchParams(window.location.search);
-        accessToken = queryParams.get("access_token") || queryParams.get("token");
-        refreshToken = queryParams.get("refresh_token") || queryParams.get("refresh_token");
-        type = queryParams.get("type") || queryParams.get("token_type");
+        accessToken = queryAccessToken;
+        refreshToken = queryRefreshToken;
+        if (!type && queryType) type = queryType;
       }
 
-      if (accessToken && (type === "recovery" || type === "password_recovery" || !type)) {
-        try {
+      try {
+        // ── Path A: token_hash + type (recovery flow via email template) ──
+        if (queryTokenHash && queryType) {
+          const { error: otpError } = await supabase.auth.verifyOtp({
+            type: queryType,
+            token_hash: queryTokenHash,
+          });
+          if (otpError) {
+            console.error("verifyOtp error:", otpError);
+            throw otpError;
+          }
+          setIsReady(true);
+          return;
+        }
+
+        // ── Path B: code (PKCE flow via exchangeCodeForSession) ──
+        if (queryCode) {
+          const { error: codeError } =
+            await supabase.auth.exchangeCodeForSession(queryCode);
+          if (codeError) {
+            console.error("exchangeCodeForSession error:", codeError);
+            throw codeError;
+          }
+          setIsReady(true);
+          return;
+        }
+
+        // ── Path C: access_token in hash/query (legacy implicit flow) ──
+        if (
+          accessToken &&
+          (type === "recovery" || type === "password_recovery" || !type)
+        ) {
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken || "",
           });
-
           if (sessionError) {
-            console.error("Session error:", sessionError);
-            setTokenError(true);
-            setError("Link reset password sudah kedaluwarsa. Silakan minta link baru.");
-          } else {
-            setIsReady(true);
+            console.error("setSession error:", sessionError);
+            throw sessionError;
           }
-        } catch (err) {
-          console.error("Token processing error:", err);
-          setTokenError(true);
-          setError("Link reset password tidak valid atau sudah kedaluwarsa");
+          setIsReady(true);
+          return;
         }
-      } else {
+
+        // ── No valid tokens found at all ──
+        // Check if there's an error from the callback redirect
+        const queryError = searchParams.get("error");
+        if (queryError) {
+          throw new Error(
+            searchParams.get("error_description") ||
+              "Link tidak valid atau sudah kedaluwarsa"
+          );
+        }
+
+        // Nothing to process
         setTokenError(true);
-        setError("Link reset password tidak valid atau sudah kedaluwarsa. Silakan minta link baru di halaman login.");
+        setError(
+          "Link reset password tidak valid. Silakan minta link baru dari halaman login."
+        );
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Terjadi kesalahan tidak diketahui";
+        console.error("Token processing error:", err);
+        setTokenError(true);
+        setError(
+          message ||
+            "Link reset password tidak valid atau sudah kedaluwarsa. Silakan minta link baru."
+        );
       }
     };
 
-    processToken();
-  }, [supabase]);
+    tryEstablishSession();
+  }, [supabase, searchParams]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,11 +174,16 @@ function ResetPasswordContent() {
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="text-emerald-600" size={32} />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Password Berhasil Diubah</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            Password Berhasil Diubah
+          </h3>
           <p className="text-sm text-slate-600 mb-6">
             Password Anda telah berhasil diperbarui. Mengarahkan ke login...
           </p>
-          <Link href="/auth/login" className="text-emerald-600 font-medium hover:underline">
+          <Link
+            href="/auth/login"
+            className="text-emerald-600 font-medium hover:underline"
+          >
             Login sekarang
           </Link>
         </div>
@@ -132,7 +208,10 @@ function ResetPasswordContent() {
               {error}
             </div>
             {tokenError && (
-              <Link href="/auth/login?forgot=1" className="text-emerald-600 hover:underline text-center mt-2">
+              <Link
+                href="/auth/login?forgot=1"
+                className="text-emerald-600 hover:underline text-center mt-2"
+              >
                 Klik di sini untuk minta link reset password baru
               </Link>
             )}
@@ -208,7 +287,10 @@ function ResetPasswordContent() {
         </form>
 
         <p className="text-center text-sm text-slate-600 mt-6">
-          <Link href="/auth/login" className="font-medium text-emerald-600 hover:underline">
+          <Link
+            href="/auth/login"
+            className="font-medium text-emerald-600 hover:underline"
+          >
             Kembali ke Login
           </Link>
         </p>
@@ -219,11 +301,13 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        </div>
+      }
+    >
       <ResetPasswordContent />
     </Suspense>
   );
