@@ -61,6 +61,8 @@ export async function POST(req: Request) {
     const applicantEmail = formData.get("applicantEmail") as string;
     const applicantPhone = formData.get("applicantPhone") as string;
     const relationship = formData.get("relationship") as string;
+    const religion = formData.get("religion") as string;
+    const burialDate = formData.get("burialDate") as string;
     
     const ktp = formData.get("ktp") as File;
     const kk = formData.get("kk") as File;
@@ -69,6 +71,39 @@ export async function POST(req: Request) {
 
     if (!nik || !deceasedDate || !ktp || !suratKematian || !suratRtRw) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
+    }
+
+    if (applicantEmail) {
+      const emailCheck = await fetch(
+        `${SUPABASE_URL}/rest/v1/makam?applicant_email=eq.${encodeURIComponent(applicantEmail)}&select=pengajuan_id,status`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
+      const existingMakam = await emailCheck.json();
+      if (Array.isArray(existingMakam) && existingMakam.length > 0) {
+        for (const m of existingMakam) {
+          const pengRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${m.pengajuan_id}&select=status`,
+            {
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+              },
+            }
+          );
+          const pengData = await pengRes.json();
+          const pengStatus = pengData[0]?.status;
+          if (pengStatus === 'PENDING' || pengStatus === 'REVISION' || pengStatus === 'NEED_REVISION') {
+            return NextResponse.json({ 
+              error: "Email sudah digunakan untuk pengajuan yang masih aktif. Silakan gunakan email lain atau hubungi admin."
+            }, { status: 409 });
+          }
+        }
+      }
     }
 
     const pengajuan = await dbInsert('pengajuan', {
@@ -120,6 +155,8 @@ export async function POST(req: Request) {
       applicant_email: applicantEmail,
       applicant_phone: applicantPhone,
       relationship: relationship,
+      religion: religion || null,
+      burial_date: burialDate || null,
       status: 'RESERVED',
       blok: 'TBA',
       nomor: 'TBA',

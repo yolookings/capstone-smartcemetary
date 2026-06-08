@@ -145,9 +145,7 @@ export default function PengajuanPage() {
                       <div className={`px-3 py-1.5 rounded-full text-xs font-bold ${status.bg} ${status.text}`}>
                         {status.label}
                       </div>
-                      <div className="text-xs text-slate-400 font-medium">
-                        Estimasi: 2-3 hari kerja
-                      </div>
+
                     </div>
 
                     <h2 className="text-xl font-extrabold text-slate-900 mb-6">

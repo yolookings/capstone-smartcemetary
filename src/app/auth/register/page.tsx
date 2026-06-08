@@ -32,6 +32,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const supabase = createClient();
 
@@ -77,6 +79,30 @@ export default function RegisterPage() {
     checkUsernameAvailability(value);
   };
 
+  const checkEmailAvailability = async (email: string) => {
+    if (!email.endsWith("@gmail.com") || email.length < 10) {
+      setEmailAvailable(null);
+      return;
+    }
+    setCheckingEmail(true);
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("email", email.toLowerCase())
+        .maybeSingle();
+      setEmailAvailable(!data);
+    } catch {
+      setEmailAvailable(true);
+    }
+    setCheckingEmail(false);
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    checkEmailAvailability(e.target.value);
+  };
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 12);
     setPhoneNumber(value);
@@ -93,6 +119,7 @@ export default function RegisterPage() {
     if (usernameAvailable === false) { setError("Username ini sudah digunakan, pilih username lain"); return; }
     if (!email.trim()) { setError("Email harus diisi"); return; }
     if (!email.endsWith("@gmail.com")) { setError("Hanya email @gmail.com yang diperbolehkan"); return; }
+    if (emailAvailable === false) { setError("Email sudah terdaftar, silakan login"); return; }
     if (!phoneNumber.trim()) { setError("Nomor HP harus diisi untuk notifikasi WhatsApp"); return; }
     if (!phoneNumber.startsWith("08")) { setError("Nomor HP harus dimulai dengan 08 untuk WhatsApp"); return; }
     if (phoneNumber.length < 10) { setError("Nomor HP minimal 10 digit"); return; }
@@ -150,7 +177,13 @@ export default function RegisterPage() {
         .upsert(profileData, { onConflict: "id" });
 
       if (profileError) {
-        console.error("Profile error:", profileError);
+        if (profileError.code === "23505") {
+          setError("Email sudah terdaftar. Silakan login dengan email Anda.");
+        } else {
+          setError(profileError.message);
+        }
+        setLoading(false);
+        return;
       }
 
       setSuccess("Pendaftaran berhasil! Silakan cek email untuk verifikasi akun Anda.");
@@ -258,10 +291,20 @@ export default function RegisterPage() {
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              <input type="email" value={email} onChange={handleEmailChange}
+                className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                 placeholder="email@gmail.com" required />
+              {checkingEmail && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-emerald-500" size={18} />}
+              {emailAvailable === true && email.length >= 10 && email.endsWith("@gmail.com") && (
+                <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
+              )}
+              {emailAvailable === false && email.length >= 10 && email.endsWith("@gmail.com") && (
+                <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={18} />
+              )}
             </div>
+            <p className="text-xs text-slate-500 mt-1">
+              {emailAvailable === false ? "Email sudah terdaftar" : emailAvailable === true ? "Email tersedia" : "Gunakan email @gmail.com"}
+            </p>
           </div>
 
           <div>
@@ -329,7 +372,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading || usernameAvailable === false}
+          <button type="submit" disabled={loading || usernameAvailable === false || emailAvailable === false}
             className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2">
             {loading ? <><Loader2 className="animate-spin" size={18} /> Mendaftarkan...</> : "Daftar Akun"}
           </button>
