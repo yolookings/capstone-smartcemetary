@@ -1,4 +1,4 @@
-import { Calendar, User, Fingerprint, Heart, Phone, MapPin, Hash } from "lucide-react";
+import { Calendar, User, Fingerprint, Heart, Phone, MapPin, Hash, Cross } from "lucide-react";
 import { EmptyField } from "./empty-field";
 
 interface DeceasedInfoProps {
@@ -10,6 +10,8 @@ interface DeceasedInfoProps {
   applicantPhone: string | null;
   blok: string | null;
   nomor: string | null;
+  religion: string | null;
+  burialDate: string | null;
 }
 
 function FieldRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null | undefined }) {
@@ -41,7 +43,7 @@ function formatDate(dateStr: string | null) {
   }
 }
 
-export function DeceasedInfo({ deceasedName, nik, deceasedDate, relationship, applicantName, applicantPhone, blok, nomor }: DeceasedInfoProps) {
+export function DeceasedInfo({ deceasedName, nik, deceasedDate, relationship, applicantName, applicantPhone, blok, nomor, religion, burialDate }: DeceasedInfoProps) {
   const hasGraveAllocation = blok && blok !== "TBA" && nomor && nomor !== "TBA";
 
   return (
@@ -79,6 +81,16 @@ export function DeceasedInfo({ deceasedName, nik, deceasedDate, relationship, ap
             icon={<Heart size={16} />}
             label="Hubungan Dengan Pemohon"
             value={relationship}
+          />
+          <FieldRow
+            icon={<Cross size={16} />}
+            label="Agama"
+            value={religion}
+          />
+          <FieldRow
+            icon={<Calendar size={16} />}
+            label="Tanggal Pemakaman"
+            value={formatDate(burialDate)}
           />
           <FieldRow
             icon={<User size={16} />}

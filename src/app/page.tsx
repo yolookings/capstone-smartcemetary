@@ -32,7 +32,7 @@ export default function Home() {
                   href="/dashboard/pengajuan/baru"
                   className="bg-primary text-white px-8 py-4 rounded-xl font-bold hover:bg-primary-dark transition-all flex items-center gap-3 shadow-lg shadow-primary/20"
                 >
-                  Mulai Pendaftaran <ArrowRight size={20} />
+                  Mulai Pengajuan Pemakaman Baru <ArrowRight size={20} />
                 </Link>
                 <div className="flex items-center gap-4 px-6 py-4 bg-white/50 border border-slate-100 rounded-xl text-secondary text-sm">
                   <MessageCircleQuestion className="text-primary" size={20} />

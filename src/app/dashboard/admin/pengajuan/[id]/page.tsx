@@ -31,6 +31,8 @@ interface Makam {
   applicant_name: string | null;
   applicant_phone: string | null;
   relationship: string | null;
+  religion: string | null;
+  burial_date: string | null;
   plot_id: string | null;
   blok: string | null;
   nomor: string | null;
@@ -314,6 +316,8 @@ export default function PengajuanDetailPage({ params }: Props) {
             applicantPhone={makamData?.applicant_phone || null}
             blok={makamData?.blok || null}
             nomor={makamData?.nomor || null}
+            religion={makamData?.religion || null}
+            burialDate={makamData?.burial_date || null}
           />
 
           {/* Grave Allocation */}

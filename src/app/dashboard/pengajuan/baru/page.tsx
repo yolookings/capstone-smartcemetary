@@ -4,13 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload,
-  FileText,
   CheckCircle,
   AlertCircle,
   Loader2,
-  User,
-  Phone,
-  MapPin,
+  Trash2,
+  Eye,
+  File,
 } from "lucide-react";
 import { Snackbar, useSnackbar } from "@/components/snackbar";
 
@@ -24,6 +23,8 @@ export default function BaruPengajuanPage() {
   const [relationship, setRelationship] = useState("Suami / Istri");
   const [relationshipOther, setRelationshipOther] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
+  const [religion, setReligion] = useState("Islam");
+  const [burialDate, setBurialDate] = useState("");
   const [ktp, setKtp] = useState<File | null>(null);
   const [kk, setKk] = useState<File | null>(null);
   const [suratKematian, setSuratKematian] = useState<File | null>(null);
@@ -84,6 +85,8 @@ export default function BaruPengajuanPage() {
       formData.append("applicantEmail", applicantEmail);
       formData.append("applicantPhone", applicantPhone);
       formData.append("relationship", relationshipFinal);
+      formData.append("religion", religion);
+      if (burialDate) formData.append("burialDate", burialDate);
       if (ktp) formData.append("ktp", ktp);
       if (kk) formData.append("kk", kk);
       if (suratKematian) formData.append("suratKematian", suratKematian);
@@ -224,6 +227,33 @@ export default function BaruPengajuanPage() {
                     required
                     value={deceasedDate}
                     onChange={(e) => setDeceasedDate(e.target.value)}
+                    className="input-pill w-full"
+                  />
+                </FormGroup>
+                <FormGroup label="Agama">
+                  <select
+                    value={religion}
+                    onChange={(e) => setReligion(e.target.value)}
+                    className="input-pill w-full appearance-none bg-no-repeat bg-[right_1.5rem_center]"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                      backgroundSize: "1rem",
+                    }}
+                  >
+                    <option>Islam</option>
+                    <option>Kristen</option>
+                    <option>Katholik</option>
+                    <option>Hindu</option>
+                    <option>Budha</option>
+                    <option>Konghucu</option>
+                    <option>Lainnya</option>
+                  </select>
+                </FormGroup>
+                <FormGroup label="Tanggal Pemakaman">
+                  <input
+                    type="date"
+                    value={burialDate}
+                    onChange={(e) => setBurialDate(e.target.value)}
                     className="input-pill w-full"
                   />
                 </FormGroup>
@@ -409,25 +439,72 @@ function UploadBox({
   setFile: (f: File | null) => void;
   id: string;
 }) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFile(e.target.files?.[0] || null);
+  };
+
+  const handleRemove = () => {
+    setFile(null);
+  };
+
+  const handlePreview = () => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="relative aspect-square border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center p-6 text-center hover:border-primary/50 transition-colors bg-neutral/50 group">
-        <input
-          type="file"
-          accept="image/*,.pdf"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="absolute inset-0 opacity-0 cursor-pointer"
-          id={id}
-        />
-        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-secondary mb-4 group-hover:scale-110 transition-transform">
-          <Upload size={24} />
-        </div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-          {label}
-        </p>
-        <p className="text-[10px] text-slate-400 truncate w-full px-2">
-          {file ? file.name : "PDF/JPG Max 2MB"}
-        </p>
+        {file ? (
+          <>
+            <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-secondary mb-3">
+              <File size={24} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+              {label}
+            </p>
+            <p className="text-[10px] text-slate-600 font-medium truncate w-full px-2 mb-3">
+              {file.name}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePreview}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition-all"
+                title="Lihat file"
+              >
+                <Eye size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={handleRemove}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 text-red-500 hover:bg-red-200 transition-all"
+                title="Hapus file"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <input
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFileChange}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              id={id}
+            />
+            <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-secondary mb-4 group-hover:scale-110 transition-transform">
+              <Upload size={24} />
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+              {label}
+            </p>
+            <p className="text-[10px] text-slate-400">PDF/JPG Max 2MB</p>
+          </>
+        )}
       </div>
     </div>
   );
