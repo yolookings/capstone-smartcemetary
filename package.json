@@ -22,6 +22,8 @@
     "@types/pg": "^8.20.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.4.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.7.0",
     "next": "16.2.2",
@@ -31,8 +33,10 @@
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.8.1",
     "remark-gfm": "^4.0.1",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -112,34 +112,64 @@ const userId = user.id;
 
     const makam = existing[0].makam;
 
-    await dbDelete('dokumen', pengajuanId);
-
-    const files = [
-      { file: ktp, type: "KTP" },
-      { file: kk, type: "KK" },
-      { file: suratKematian, type: "SURAT_KEMATIAN" },
-      { file: suratRtRw, type: "SURAT_RT_RW" }
-    ];
-
+    // Only upload new files for document types that were provided
+    // Keep existing docs for types that weren't re-uploaded
     let hasUpload = false;
-    for (const f of files) {
-      if (f.file && f.file.size > 0) {
-        hasUpload = true;
-        const buffer = Buffer.from(await f.file.arrayBuffer());
-        const upload = await uploadFile(buffer, f.file.name, f.file.type);
-        
-        await dbInsert('dokumen', {
-          pengajuan_id: pengajuanId,
-          user_id: userId,
-          type: f.type,
-          file_url: upload.fileUrl,
-          file_key: upload.fileKey,
-        });
-      }
+
+    if (ktp && ktp.size > 0) {
+      hasUpload = true;
+      const buffer = Buffer.from(await ktp.arrayBuffer());
+      const upload = await uploadFile(buffer, ktp.name, ktp.type);
+      await dbInsert('dokumen', {
+        pengajuan_id: pengajuanId,
+        user_id: userId,
+        type: "KTP",
+        file_url: upload.fileUrl,
+        file_key: upload.fileKey,
+      });
+    }
+
+    if (kk && kk.size > 0) {
+      hasUpload = true;
+      const buffer = Buffer.from(await kk.arrayBuffer());
+      const upload = await uploadFile(buffer, kk.name, kk.type);
+      await dbInsert('dokumen', {
+        pengajuan_id: pengajuanId,
+        user_id: userId,
+        type: "KK",
+        file_url: upload.fileUrl,
+        file_key: upload.fileKey,
+      });
+    }
+
+    if (suratKematian && suratKematian.size > 0) {
+      hasUpload = true;
+      const buffer = Buffer.from(await suratKematian.arrayBuffer());
+      const upload = await uploadFile(buffer, suratKematian.name, suratKematian.type);
+      await dbInsert('dokumen', {
+        pengajuan_id: pengajuanId,
+        user_id: userId,
+        type: "SURAT_KEMATIAN",
+        file_url: upload.fileUrl,
+        file_key: upload.fileKey,
+      });
+    }
+
+    if (suratRtRw && suratRtRw.size > 0) {
+      hasUpload = true;
+      const buffer = Buffer.from(await suratRtRw.arrayBuffer());
+      const upload = await uploadFile(buffer, suratRtRw.name, suratRtRw.type);
+      await dbInsert('dokumen', {
+        pengajuan_id: pengajuanId,
+        user_id: userId,
+        type: "SURAT_RT_RW",
+        file_url: upload.fileUrl,
+        file_key: upload.fileKey,
+      });
     }
 
     if (!hasUpload) {
-      return NextResponse.json({ error: "Minimal upload satu dokumen" }, { status: 400 });
+      return NextResponse.json({ error: "Minimal upload satu dokumen revisi" }, { status: 400 });
     }
 
     await dbUpdate('pengajuan', pengajuanId, { 

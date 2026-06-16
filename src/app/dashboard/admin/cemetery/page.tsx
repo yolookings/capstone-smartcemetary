@@ -504,6 +504,71 @@ export default function AdminCemeteryPage() {
         </div>
       </div>
 
+      {/* Block-level Stats */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center gap-2">
+          <MapPin size={18} className="text-emerald-600" />
+          <h3 className="font-bold text-slate-900">Statistik per Blok</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th className="text-left px-6 py-4">Blok</th>
+                <th className="text-center px-6 py-4">Total Petak</th>
+                <th className="text-center px-6 py-4">Tersedia</th>
+                <th className="text-center px-6 py-4">Dipesan</th>
+                <th className="text-center px-6 py-4">Terisi</th>
+                <th className="text-center px-6 py-4">Occupancy</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {(() => {
+                const blockMap = new Map<string, { name: string; total: number; available: number; reserved: number; occupied: number }>();
+                for (const plot of rawPlots) {
+                  const block = (Array.isArray(plot.cemetery_blocks) ? plot.cemetery_blocks[0] : plot.cemetery_blocks) || {};
+                  if (!block.id) continue;
+                  if (!blockMap.has(block.id)) {
+                    blockMap.set(block.id, { name: block.name || block.code || "", total: 0, available: 0, reserved: 0, occupied: 0 });
+                  }
+                  const b = blockMap.get(block.id)!;
+                  b.total++;
+                  if (plot.status === "AVAILABLE") b.available++;
+                  else if (plot.status === "RESERVED") b.reserved++;
+                  else if (plot.status === "OCCUPIED") b.occupied++;
+                }
+                return Array.from(blockMap.values()).map((block) => {
+                  const occ = block.total > 0 ? (((block.occupied + block.reserved) / block.total) * 100).toFixed(1) : "0.0";
+                  return (
+                    <tr key={block.name} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-slate-900">{block.name}</td>
+                      <td className="px-6 py-4 text-center text-slate-600">{block.total}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-semibold text-emerald-600">{block.available}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-semibold text-amber-600">{block.reserved}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="font-semibold text-rose-600">{block.occupied}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(parseFloat(occ), 100)}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold text-slate-600 w-12">{occ}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Polygon Editor Panel */}
       {polygonEditBlockId && (
         <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">

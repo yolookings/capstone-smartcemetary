@@ -186,7 +186,10 @@ export function ClientTabs({
   }, [activeBlockGraves.length]);
 
   const handlePlotClick = (plot: GravePlot) => {
-    if (isAdmin && plot && (plot.status === "OCCUPIED" || plot.status === "RESERVED")) {
+    if (!isLoggedIn) return;
+    if (plot.status === "AVAILABLE") return;
+    const canView = isAdmin || (userId && plot.user_id === userId);
+    if (canView) {
       setModalData(plot);
       setShowModal(true);
     }
