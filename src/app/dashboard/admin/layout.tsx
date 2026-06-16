@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -104,7 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
 
     checkAdmin();
-  }, [router, supabase]);
+  }, [router]);
 
   useEffect(() => {
     setSidebarOpen(false);
