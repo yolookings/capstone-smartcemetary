@@ -171,7 +171,12 @@ export default function PengajuanPage() {
                       </div>
                     </div>
 
-                    {selected.notes && (
+                    {selected.status === 'REJECTED' && selected.rejection_reason ? (
+                      <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <h4 className="font-medium text-red-800 mb-2">Alasan Penolakan:</h4>
+                        <p className="text-red-700">{selected.rejection_reason}</p>
+                      </div>
+                    ) : selected.notes && (
                       <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                         <h4 className="font-medium text-amber-800 mb-2">Catatan dari Admin:</h4>
                         <p className="text-amber-700">{selected.notes}</p>

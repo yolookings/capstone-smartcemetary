@@ -69,10 +69,14 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { status, notes, plot_id, block_id, cemetery_id } = await req.json();
+    const { status, notes, rejection_reason, plot_id, block_id, cemetery_id } = await req.json();
 
-    // Update pengajuan status
-    const updated = await dbUpdate('pengajuan', id, { status, notes });
+    // Build update payload
+    const updateData: Record<string, unknown> = { status, notes };
+    if (status === "REJECTED" && rejection_reason) {
+      updateData.rejection_reason = rejection_reason;
+    }
+    const updated = await dbUpdate('pengajuan', id, updateData);
 
     // ── Full auto-allocation via cemetery_id (cross-block) ───
     // Finds next block by sort_order with available plots,

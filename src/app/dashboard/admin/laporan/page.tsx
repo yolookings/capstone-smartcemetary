@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BarChart3, FileText, Users, MapPin, TrendingUp, Calendar, AlertCircle } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { BarChart3, FileText, Users, MapPin, TrendingUp, Calendar, AlertCircle, Download, FileDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Stats {
   totalPengajuan: number;
@@ -15,6 +21,15 @@ interface Stats {
   makamAvailable: number;
   makamOccupied: number;
   makamReserved: number;
+}
+
+interface MonthlyRow {
+  month: string;
+  total: number;
+  approved: number;
+  rejected: number;
+  pending: number;
+  revision: number;
 }
 
 export default function AdminLaporanPage() {
@@ -32,6 +47,115 @@ export default function AdminLaporanPage() {
     makamReserved: 0,
   });
   const [error, setError] = useState<string | null>(null);
+  const [monthlyData, setMonthlyData] = useState<MonthlyRow[]>([]);
+  const [monthlyLoading, setMonthlyLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+
+  const monthNames = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+  ];
+
+  const formatMonth = (monthKey: string) => {
+    const [, m] = monthKey.split("-");
+    return monthNames[parseInt(m, 10) - 1] || monthKey;
+  };
+
+  const fetchMonthlyData = async () => {
+    setMonthlyLoading(true);
+    try {
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from("pengajuan")
+        .select("id,status,created_at");
+
+      if (fetchError || !data) {
+        setMonthlyLoading(false);
+        return;
+      }
+
+      let filtered = data;
+      if (selectedMonth !== "all") {
+        filtered = filtered.filter((d) => {
+          const date = new Date(d.created_at);
+          return (date.getMonth() + 1).toString() === selectedMonth;
+        });
+      }
+      if (selectedYear !== "all") {
+        filtered = filtered.filter((d) => {
+          const date = new Date(d.created_at);
+          return date.getFullYear().toString() === selectedYear;
+        });
+      }
+
+      const grouped: Record<string, MonthlyRow> = {};
+      for (const item of filtered) {
+        const date = new Date(item.created_at);
+        const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`;
+        if (!grouped[key]) {
+          grouped[key] = { month: key, total: 0, approved: 0, rejected: 0, pending: 0, revision: 0 };
+        }
+        grouped[key].total++;
+        if (item.status === "APPROVED") grouped[key].approved++;
+        else if (item.status === "REJECTED") grouped[key].rejected++;
+        else if (item.status === "PENDING") grouped[key].pending++;
+        else if (item.status === "REVISION") grouped[key].revision++;
+      }
+
+      setMonthlyData(
+        Object.values(grouped).sort((a, b) => a.month.localeCompare(b.month)),
+      );
+    } catch {
+      /* empty */
+    } finally {
+      setMonthlyLoading(false);
+    }
+  };
+
+  const currentYear = new Date().getFullYear();
+  const yearOptions = useMemo(() => {
+    const years: string[] = [];
+    for (let y = currentYear; y >= currentYear - 5; y--) years.push(String(y));
+    return years;
+  }, [currentYear]);
+
+  const exportToExcel = () => {
+    const wsData = monthlyData.map((d, i) => ({
+      No: i + 1,
+      Bulan: formatMonth(d.month),
+      "Total Pengajuan": d.total,
+      Disetujui: d.approved,
+      Ditolak: d.rejected,
+      Pending: d.pending,
+      Revisi: d.revision,
+    }));
+    const ws = XLSX.utils.json_to_sheet(wsData);
+    ws["!cols"] = [
+      { wch: 5 }, { wch: 20 }, { wch: 16 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Bulanan");
+    XLSX.writeFile(wb, "laporan-bulanan.xlsx");
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Laporan Bulanan - Smart Cemetery", 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Tanggal: ${new Date().toLocaleDateString("id-ID")}`, 14, 32);
+    autoTable(doc, {
+      startY: 40,
+      head: [["No", "Bulan", "Total", "Disetujui", "Ditolak", "Pending", "Revisi"]],
+      body: monthlyData.map((d, i) => [
+        i + 1, formatMonth(d.month), d.total, d.approved, d.rejected, d.pending, d.revision,
+      ]),
+      theme: "grid",
+      headStyles: { fillColor: [16, 185, 129] },
+    });
+    doc.save("laporan-bulanan.pdf");
+  };
 
   const fetchStats = async () => {
     try {
@@ -105,6 +229,10 @@ export default function AdminLaporanPage() {
     }, 0);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    fetchMonthlyData();
+  }, [selectedMonth, selectedYear]);
 
   if (loading) {
     return (
@@ -301,6 +429,90 @@ export default function AdminLaporanPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Monthly Chart Section */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <h3 className="font-bold text-slate-900 text-lg">Tren Pengajuan Bulanan</h3>
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="all">Semua Bulan</option>
+              {monthNames.map((name, i) => (
+                <option key={i + 1} value={String(i + 1)}>{name}</option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="all">Semua Tahun</option>
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <button
+              onClick={exportToExcel}
+              disabled={monthlyData.length === 0}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <FileDown size={16} />
+              Export Excel
+            </button>
+            <button
+              onClick={exportToPDF}
+              disabled={monthlyData.length === 0}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <Download size={16} />
+              Export PDF
+            </button>
+          </div>
+        </div>
+        {monthlyLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : monthlyData.length > 0 ? (
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="month"
+                  tickFormatter={(v: string) => {
+                    const [, m] = v.split("-");
+                    return monthNames[parseInt(m, 10) - 1]?.slice(0, 3) || v;
+                  }}
+                  tick={{ fontSize: 12, fill: "#94a3b8" }}
+                />
+                <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} />
+                <Tooltip
+                  labelFormatter={(v) => formatMonth(String(v))}
+                  contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+                />
+                <Legend />
+                <Bar dataKey="total" name="Total" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="approved" name="Disetujui" fill="#34d399" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="rejected" name="Ditolak" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="pending" name="Pending" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revision" name="Revisi" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-64 text-slate-400">
+            <div className="text-center">
+              <BarChart3 size={40} className="mx-auto mb-2 opacity-30" />
+              <p>Tidak ada data untuk periode ini</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

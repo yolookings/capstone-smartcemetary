@@ -20,6 +20,7 @@ export default function AdminNotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [error, setError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const [newNotificationAlert, setNewNotificationAlert] = useState(false);
 
   const fetchData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -46,6 +47,7 @@ export default function AdminNotificationsPage() {
       }
 
       setNotifications(data || []);
+      setNewNotificationAlert(false);
       setLoading(false);
       setRefreshing(false);
     } catch (err) {
@@ -59,6 +61,27 @@ export default function AdminNotificationsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const supabase = createClient();
+        const { count } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("read", false);
+
+        const localUnread = notifications.filter((n) => !n.read).length;
+        if (count !== null && count > localUnread) {
+          setNewNotificationAlert(true);
+        }
+      } catch {
+        /* empty */
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [notifications]);
 
   const filteredNotifications = notifications.filter(n => {
     if (filter === 'unread') return !n.read;
@@ -219,6 +242,24 @@ export default function AdminNotificationsPage() {
           </button>
         )}
       </div>
+
+      {newNotificationAlert && (
+        <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+              <Bell className="text-emerald-600" size={20} />
+            </div>
+            <p className="text-sm font-semibold text-emerald-800">Notifikasi baru tersedia</p>
+          </div>
+          <button
+            onClick={() => fetchData(true)}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+            Muat ulang
+          </button>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
         {filteredNotifications.length > 0 ? (
