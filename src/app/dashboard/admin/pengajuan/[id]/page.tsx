@@ -44,6 +44,7 @@ interface Pengajuan {
   id: string;
   status: string;
   notes: string | null;
+  rejection_reason: string | null;
   created_at: string;
   updated_at?: string;
   user_id: string;
@@ -54,6 +55,12 @@ interface Pengajuan {
   };
   makam?: Makam | Makam[];
   dokumen?: Dokumen[];
+}
+
+interface Cemetery {
+  id: string;
+  name: string;
+  code: string;
 }
 
 interface Props {
@@ -126,14 +133,26 @@ export default function PengajuanDetailPage({ params }: Props) {
   const [pengajuan, setPengajuan] = useState<Pengajuan | null>(null);
   const [id, setId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [cemeteries, setCemeteries] = useState<Cemetery[]>([]);
 
   const supabase = createClient();
+
+  const fetchCemeteries = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cemeteries");
+      if (res.ok) {
+        const data = await res.json();
+        setCemeteries(data || []);
+      }
+    } catch {
+      // fallback: empty
+    }
+  }, []);
 
   const fetchData = useCallback(async (pengajuanId: string) => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch pengajuan with related data including cemetery/block/plot
       const { data, error: fetchError } = await supabase
         .from("pengajuan")
         .select("*, profiles(email, full_name, phone), makam(*), dokumen(*)")
@@ -156,9 +175,10 @@ export default function PengajuanDetailPage({ params }: Props) {
   useEffect(() => {
     params.then((p) => {
       setId(p.id);
+      fetchCemeteries();
       fetchData(p.id);
     });
-  }, [params, fetchData]);
+  }, [params, fetchData, fetchCemeteries]);
 
   const getPresignedUrl = useCallback(async (fileKey: string) => {
     const { data } = await supabase.storage
@@ -167,11 +187,10 @@ export default function PengajuanDetailPage({ params }: Props) {
     return data?.signedUrl || "";
   }, [supabase.storage]);
 
-  const updateStatus = useCallback(async (newStatus: string, notes: string, blockId?: string) => {
+  const updateStatus = useCallback(async (newStatus: string, notes: string, extra?: Record<string, unknown>) => {
     setUpdating(true);
     try {
-      const body: Record<string, unknown> = { status: newStatus, notes };
-      if (blockId) body.block_id = blockId;
+      const body: Record<string, unknown> = { status: newStatus, notes, ...extra };
       const res = await fetch(`/api/admin/pengajuan/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -184,12 +203,12 @@ export default function PengajuanDetailPage({ params }: Props) {
     }
   }, [id, fetchData]);
 
-  const handleApprove = useCallback(async () => {
-    await updateStatus("APPROVED", "Dokumen diverifikasi dan disetujui");
+  const handleApproveAuto = useCallback(async (cemeteryId: string) => {
+    await updateStatus("APPROVED", "Disetujui dengan alokasi otomatis", { cemetery_id: cemeteryId });
   }, [updateStatus]);
 
-  const handleReject = useCallback(async () => {
-    await updateStatus("REJECTED", "Dokumen tidak valid");
+  const handleReject = useCallback(async (reason: string) => {
+    await updateStatus("REJECTED", reason, { rejection_reason: reason });
   }, [updateStatus]);
 
   const handleRevision = useCallback(async (note: string) => {
@@ -208,7 +227,7 @@ export default function PengajuanDetailPage({ params }: Props) {
   }, [id, fetchData]);
 
   const handleAllocate = useCallback(async (blockId: string) => {
-    await updateStatus(pengajuan?.status || "PENDING", "", blockId);
+    await updateStatus(pengajuan?.status || "PENDING", "", { block_id: blockId });
   }, [pengajuan?.status, updateStatus]);
 
   const handleRefresh = useCallback(() => {
@@ -388,10 +407,12 @@ export default function PengajuanDetailPage({ params }: Props) {
               pengajuanId={pengajuan.id}
               currentStatus={pengajuan.status}
               notes={pengajuan.notes}
+              rejectionReason={pengajuan.rejection_reason}
               createdAt={pengajuan.created_at}
               updatedAt={pengajuan.updated_at}
               documentCount={documents.length}
-              onApprove={handleApprove}
+              cemeteries={cemeteries}
+              onApproveAuto={handleApproveAuto}
               onRequestRevision={handleRevision}
               onReject={handleReject}
               onRefresh={handleRefresh}

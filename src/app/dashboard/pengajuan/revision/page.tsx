@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Upload, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { Upload, CheckCircle, AlertCircle, ArrowLeft, FileText, Eye } from "lucide-react";
 
 export default function RevisionPage() {
   const router = useRouter();
@@ -11,6 +11,7 @@ export default function RevisionPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pengajuanId, setPengajuanId] = useState("");
   const [pengajuan, setPengajuan] = useState<any>(null);
+  const [dokumenList, setDokumenList] = useState<any[]>([]);
   const [ktp, setKtp] = useState<File | null>(null);
   const [kk, setKk] = useState<File | null>(null);
   const [suratKematian, setSuratKematian] = useState<File | null>(null);
@@ -18,10 +19,10 @@ export default function RevisionPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  async function fetchPengajuan(id: string) {
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+  async function fetchPengajuan(id: string) {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${id}&select=*,makam(*)`,
       {
@@ -35,6 +36,18 @@ export default function RevisionPage() {
     if (data && data.length > 0) {
       setPengajuan(data[0]);
     }
+    // Also fetch existing documents
+    const dokRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/dokumen?pengajuan_id=eq.${id}&select=*`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+      }
+    );
+    const dokData = await dokRes.json();
+    setDokumenList(dokData || []);
     setLoading(false);
   }
 
@@ -48,8 +61,8 @@ export default function RevisionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ktp && !kk && !suratKematian) {
-      setError("Minimal upload satu dokumen");
+    if (!ktp && !kk && !suratKematian && !suratRtRw) {
+      setError("Pilih setidaknya satu dokumen untuk diupload ulang");
       return;
     }
 
@@ -81,6 +94,20 @@ export default function RevisionPage() {
       setError(err.message || "Terjadi kesalahan");
       setSubmitting(false);
     }
+  };
+
+  const getDocTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      'KTP': 'KTP Pemohon',
+      'KK': 'Kartu Keluarga',
+      'SURAT_KEMATIAN': 'Surat Kematian',
+      'SURAT_RT_RW': 'Surat RT/RW',
+    };
+    return labels[type] || type;
+  };
+
+  const getExistingDoc = (type: string) => {
+    return dokumenList.find((d) => d.type === type);
   };
 
   if (success) {
@@ -141,10 +168,36 @@ export default function RevisionPage() {
           </div>
         )}
 
+        {pengajuan?.rejection_reason && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <h3 className="font-medium text-red-800 mb-2">Alasan Penolakan:</h3>
+            <p className="text-red-700">{pengajuan.rejection_reason}</p>
+          </div>
+        )}
+
+        {/* Existing documents */}
+        {dokumenList.length > 0 && (
+          <div className="mb-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <h3 className="text-sm font-bold text-slate-700 mb-3">Dokumen yang sudah diupload</h3>
+            <div className="space-y-2">
+              {dokumenList.map((doc) => (
+                <div key={doc.id} className="flex items-center gap-2 text-xs text-slate-600">
+                  <FileText size={14} className="text-emerald-600" />
+                  <span className="font-medium">{getDocTypeLabel(doc.type)}</span>
+                  <span className="text-emerald-600 ml-auto">✓ Tersedia</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-3">
+              Dokumen yang sudah ada akan tetap digunakan. Hanya upload ulang dokumen yang perlu diperbaiki.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Foto KTP <span className="text-rose-500">*</span>
+              Foto KTP
             </label>
             <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-slate-400 transition-colors">
               <input
@@ -157,7 +210,7 @@ export default function RevisionPage() {
               <label htmlFor="ktp-upload" className="cursor-pointer">
                 <Upload className="mx-auto text-slate-400 mb-2" />
                 <p className="text-sm text-slate-600">
-                  {ktp ? ktp.name : "Klik untuk upload foto KTP"}
+                  {ktp ? ktp.name : "Klik untuk upload ulang KTP (jika perlu)"}
                 </p>
               </label>
             </div>
@@ -176,7 +229,7 @@ export default function RevisionPage() {
               <label htmlFor="kk-upload" className="cursor-pointer">
                 <Upload className="mx-auto text-slate-400 mb-2" />
                 <p className="text-sm text-slate-600">
-                  {kk ? kk.name : "Klik untuk upload foto KK"}
+                  {kk ? kk.name : "Klik untuk upload ulang KK (jika perlu)"}
                 </p>
               </label>
             </div>
@@ -184,7 +237,7 @@ export default function RevisionPage() {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Surat Kematian <span className="text-rose-500">*</span>
+              Surat Kematian
             </label>
             <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-slate-400 transition-colors">
               <input
@@ -197,7 +250,7 @@ export default function RevisionPage() {
               <label htmlFor="surat-upload" className="cursor-pointer">
                 <Upload className="mx-auto text-slate-400 mb-2" />
                 <p className="text-sm text-slate-600">
-                  {suratKematian ? suratKematian.name : "Klik untuk upload surat kematian"}
+                  {suratKematian ? suratKematian.name : "Klik untuk upload ulang surat kematian (jika perlu)"}
                 </p>
               </label>
             </div>
@@ -205,7 +258,7 @@ export default function RevisionPage() {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Surat RT/RW <span className="text-rose-500">*</span>
+              Surat RT/RW
             </label>
             <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-slate-400 transition-colors">
               <input
@@ -218,7 +271,7 @@ export default function RevisionPage() {
               <label htmlFor="srt-upload" className="cursor-pointer">
                 <Upload className="mx-auto text-slate-400 mb-2" />
                 <p className="text-sm text-slate-600">
-                  {suratRtRw ? suratRtRw.name : "Klik untuk upload surat RT/RW"}
+                  {suratRtRw ? suratRtRw.name : "Klik untuk upload ulang surat RT/RW (jika perlu)"}
                 </p>
               </label>
             </div>

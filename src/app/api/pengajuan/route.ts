@@ -69,8 +69,8 @@ export async function POST(req: Request) {
     const suratKematian = formData.get("suratKematian") as File;
     const suratRtRw = formData.get("suratRtRw") as File;
 
-    if (!nik || !deceasedDate || !ktp || !suratKematian || !suratRtRw) {
-      return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
+    if (!nik || !deceasedDate || !ktp || !kk || !suratKematian || !suratRtRw) {
+      return NextResponse.json({ error: "Data tidak lengkap. Pastikan KTP, KK, Surat Kematian, dan Surat RT/RW sudah diupload." }, { status: 400 });
     }
 
     if (applicantEmail) {

@@ -8,23 +8,33 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
-  Send,
   Loader2,
   ChevronDown,
   FileText,
+  Sparkles,
+  Map,
 } from "lucide-react";
 import { ConfirmModal } from "./confirm-modal";
+
+interface Cemetery {
+  id: string;
+  name: string;
+  code: string;
+}
 
 interface VerificationPanelProps {
   pengajuanId: string;
   currentStatus: string;
   notes: string | null;
+  rejectionReason: string | null;
   createdAt: string;
   updatedAt?: string | null;
   documentCount: number;
-  onApprove: () => Promise<void>;
+  cemeteries: Cemetery[];
+  onApprove?: () => Promise<void>;
+  onApproveAuto: (cemeteryId: string) => Promise<void>;
   onRequestRevision: (note: string) => Promise<void>;
-  onReject: () => Promise<void>;
+  onReject: (reason: string) => Promise<void>;
   onRefresh: () => void;
 }
 
@@ -87,16 +97,18 @@ function formatDate(dateStr: string) {
   });
 }
 
-type ModalAction = "approve" | "revision" | "reject" | null;
+type ModalAction = "approve-auto" | "approve-manual" | "revision" | "reject" | null;
 
 export function VerificationPanel({
   pengajuanId,
   currentStatus,
   notes,
+  rejectionReason,
   createdAt,
   updatedAt,
   documentCount,
-  onApprove,
+  cemeteries,
+  onApproveAuto,
   onRequestRevision,
   onReject,
   onRefresh,
@@ -105,17 +117,21 @@ export function VerificationPanel({
   const [activeModal, setActiveModal] = useState<ModalAction>(null);
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [rejectionReasonText, setRejectionReasonText] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
   const [requestingRevision, setRequestingRevision] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedCemeteryId, setSelectedCemeteryId] = useState(cemeteries[0]?.id || "");
 
   const isPending = currentStatus === "PENDING";
   const isApproved = currentStatus === "APPROVED";
+  const isRejected = currentStatus === "REJECTED";
 
-  const handleApprove = async () => {
+  const handleApproveAuto = async () => {
+    if (!selectedCemeteryId) return;
     setApproving(true);
     try {
-      await onApprove();
+      await onApproveAuto(selectedCemeteryId);
       setActiveModal(null);
     } catch {
       // error handled upstream
@@ -125,9 +141,11 @@ export function VerificationPanel({
   };
 
   const handleReject = async () => {
+    if (!rejectionReasonText.trim()) return;
     setRejecting(true);
     try {
-      await onReject();
+      await onReject(rejectionReasonText.trim());
+      setRejectionReasonText("");
       setActiveModal(null);
     } catch {
       // error handled upstream
@@ -154,6 +172,13 @@ export function VerificationPanel({
     setRefreshing(true);
     await onRefresh();
     setRefreshing(false);
+  };
+
+  const handleOpenApproveModal = () => {
+    if (cemeteries.length > 0 && !selectedCemeteryId) {
+      setSelectedCemeteryId(cemeteries[0].id);
+    }
+    setActiveModal("approve-auto");
   };
 
   return (
@@ -220,20 +245,28 @@ export function VerificationPanel({
             </div>
           )}
 
+          {/* Rejection Reason Display */}
+          {isRejected && rejectionReason && (
+            <div className="mb-6 p-3 bg-red-50 rounded-xl border border-red-100">
+              <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1.5">Alasan Penolakan</p>
+              <p className="text-sm text-red-700 leading-relaxed">{rejectionReason}</p>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="space-y-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               {isApproved ? "Aksi Lainnya" : "Aksi Verifikasi"}
             </p>
 
-            {/* Primary: Approve */}
+            {/* Primary: Approve with Auto Allocation */}
             <button
-              onClick={() => setActiveModal("approve")}
+              onClick={handleOpenApproveModal}
               disabled={!isPending}
               className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
             >
-              <CheckCircle size={18} />
-              {isApproved ? "Telah Disetujui" : "Setujui & Approve"}
+              <Sparkles size={18} />
+              {isApproved ? "Telah Disetujui" : "Setujui & Alokasi Otomatis"}
             </button>
 
             {/* Secondary: Request Revision */}
@@ -248,7 +281,10 @@ export function VerificationPanel({
 
             {/* Tertiary: Reject */}
             <button
-              onClick={() => setActiveModal("reject")}
+              onClick={() => {
+                setRejectionReasonText("");
+                setActiveModal("reject");
+              }}
               disabled={!isPending}
               className="w-full py-3 border border-slate-200 text-slate-500 rounded-xl font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -259,23 +295,50 @@ export function VerificationPanel({
         </div>
       </div>
 
-      {/* Approve Confirmation Modal */}
+      {/* Approve with Auto Allocation Modal */}
       <ConfirmModal
-        open={activeModal === "approve"}
+        open={activeModal === "approve-auto"}
         onClose={() => setActiveModal(null)}
-        onConfirm={handleApprove}
-        title="Setujui Pengajuan"
-        description="Pastikan semua dokumen telah diverifikasi dan data pemohon sudah lengkap. Tindakan ini akan mengirim notifikasi WhatsApp ke pemohon."
-        confirmLabel="Setujui Sekarang"
+        onConfirm={handleApproveAuto}
+        title="Setujui dengan Alokasi Otomatis"
+        description="Sistem akan memilih blok dan petak yang tersedia secara otomatis. Pilih pemakaman untuk alokasi."
+        confirmLabel="Setujui & Alokasikan"
         confirmVariant="primary"
         loading={approving}
       >
-        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-          <div className="flex items-start gap-2">
-            <FileText size={16} className="text-emerald-600 mt-0.5 shrink-0" />
-            <p className="text-xs text-emerald-700 font-medium">
-              Setelah disetujui, lokasi makam akan otomatis dialokasikan dan pemohon akan menerima notifikasi.
-            </p>
+        <div className="space-y-4">
+          {cemeteries.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                Pilih Pemakaman
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedCemeteryId}
+                  onChange={(e) => setSelectedCemeteryId(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-medium text-sm appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                >
+                  {cemeteries.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={16}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                />
+              </div>
+            </div>
+          )}
+          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+            <div className="flex items-start gap-2">
+              <Sparkles size={16} className="text-emerald-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-emerald-700 font-medium">
+                Sistem akan memilih blok dengan prioritas tertinggi yang masih memiliki petak tersedia, lalu
+                mengalokasikannya secara otomatis. Pemohon akan menerima notifikasi WhatsApp.
+              </p>
+            </div>
           </div>
         </div>
       </ConfirmModal>
@@ -303,14 +366,22 @@ export function VerificationPanel({
       {/* Reject Confirmation Modal */}
       <ConfirmModal
         open={activeModal === "reject"}
-        onClose={() => setActiveModal(null)}
+        onClose={() => { setActiveModal(null); setRejectionReasonText(""); }}
         onConfirm={handleReject}
         title="Tolak Pengajuan"
-        description="Apakah Anda yakin ingin menolak pengajuan ini? Tindakan ini akan mengirim notifikasi penolakan ke pemohon."
+        description="Berikan alasan penolakan yang jelas agar pemohon memahami mengapa pengajuan ditolak."
         confirmLabel="Tolak Pengajuan"
         confirmVariant="danger"
         loading={rejecting}
-      />
+      >
+        <textarea
+          className="w-full border border-slate-200 rounded-xl p-3 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 text-sm transition-all resize-none"
+          rows={4}
+          placeholder="Contoh: Data pemohon tidak sesuai dengan KTP yang dilampirkan."
+          value={rejectionReasonText}
+          onChange={(e) => setRejectionReasonText(e.target.value)}
+        />
+      </ConfirmModal>
     </>
   );
 }

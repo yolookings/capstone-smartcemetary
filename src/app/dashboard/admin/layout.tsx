@@ -28,9 +28,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ full_name: string; username: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const { count } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("read", false);
+        if (count !== null) setUnreadCount(count);
+      } catch {
+        /* empty */
+      }
+    };
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -86,7 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
 
     checkAdmin();
-  }, [router, supabase]);
+  }, [router]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -121,7 +139,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }`}
           >
             <span className="flex-shrink-0">{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="flex-1">{item.label}</span>
+            {item.href === "/dashboard/admin/notifications" && unreadCount > 0 && (
+              <span className="flex-shrink-0 min-w-[22px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </Link>
         ))}
       </nav>

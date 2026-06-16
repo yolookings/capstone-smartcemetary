@@ -32,6 +32,7 @@ export default function BaruPengajuanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [docErrors, setDocErrors] = useState<Record<string, boolean>>({});
   const router = useRouter();
 
   const { snackbar, showSnackbar, hideSnackbar } = useSnackbar();
@@ -61,6 +62,25 @@ export default function BaruPengajuanPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDocErrors({});
+
+    // Client-side mandatory document validation
+    const missingDocs: Record<string, boolean> = {};
+    if (!ktp) missingDocs.ktp = true;
+    if (!kk) missingDocs.kk = true;
+    if (!suratKematian) missingDocs.suratKematian = true;
+    if (Object.keys(missingDocs).length > 0) {
+      setDocErrors(missingDocs);
+      showSnackbar({
+        message: "Dokumen wajib (KTP, KK, Surat Kematian) harus diupload.",
+        type: "error",
+        duration: 4000,
+      });
+      setError("Dokumen wajib (KTP, KK, Surat Kematian) harus diupload.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess(false);
@@ -359,18 +379,27 @@ export default function BaruPengajuanPage() {
                   file={ktp}
                   setFile={setKtp}
                   id="ktp"
+                  required
+                  error={!!docErrors.ktp}
+                  onClearError={() => setDocErrors((prev) => ({ ...prev, ktp: false }))}
                 />
                 <UploadBox
                   label="Upload KK"
                   file={kk}
                   setFile={setKk}
                   id="kk"
+                  required
+                  error={!!docErrors.kk}
+                  onClearError={() => setDocErrors((prev) => ({ ...prev, kk: false }))}
                 />
                 <UploadBox
                   label="Surat Kematian"
                   file={suratKematian}
                   setFile={setSuratKematian}
                   id="sk"
+                  required
+                  error={!!docErrors.suratKematian}
+                  onClearError={() => setDocErrors((prev) => ({ ...prev, suratKematian: false }))}
                 />
                 <UploadBox
                   label="Surat RT/RW"
@@ -433,14 +462,21 @@ function UploadBox({
   file,
   setFile,
   id,
+  required,
+  error,
+  onClearError,
 }: {
   label: string;
   file: File | null;
   setFile: (f: File | null) => void;
   id: string;
+  required?: boolean;
+  error?: boolean;
+  onClearError?: () => void;
 }) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] || null);
+    if (onClearError) onClearError();
   };
 
   const handleRemove = () => {
@@ -454,9 +490,17 @@ function UploadBox({
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
+  const borderClass = error
+    ? "border-red-400 bg-red-50 hover:border-red-500"
+    : "border-slate-200 hover:border-primary/50 bg-neutral/50";
+
   return (
     <div className="space-y-2">
-      <div className="relative aspect-square border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center p-6 text-center hover:border-primary/50 transition-colors bg-neutral/50 group">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </p>
+      <div className={`relative aspect-square border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center p-6 text-center transition-colors group ${borderClass}`}>
         {file ? (
           <>
             <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-secondary mb-3">
@@ -503,6 +547,11 @@ function UploadBox({
               {label}
             </p>
             <p className="text-[10px] text-slate-400">PDF/JPG Max 2MB</p>
+            {error && (
+              <p className="text-[10px] text-red-500 font-medium mt-1">
+                Wajib diupload
+              </p>
+            )}
           </>
         )}
       </div>
