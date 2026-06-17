@@ -26,7 +26,7 @@ export default function PengajuanPage() {
       const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/pengajuan?user_id=eq.${user.id}&select=*,makam(nik,blok,nomor,deceased_date,applicant_name,relationship)&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/pengajuan?user_id=eq.${user.id}&select=*,makam(nik,blok,nomor,deceased_name,deceased_date,applicant_name,applicant_email,applicant_phone,relationship,religion,burial_date)&order=created_at.desc`,
         {
           headers: {
             'apikey': SUPABASE_KEY,
@@ -351,35 +351,97 @@ export default function PengajuanPage() {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
               <div className="flex items-center gap-2 mb-6">
                 <FileText className="text-emerald-600" size={20} />
-                <h3 className="text-lg font-extrabold text-slate-900">Detail Pengajuan</h3>
+                <h3 className="text-lg font-extrabold text-slate-900">Data Pengajuan</h3>
               </div>
               
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">No. Referensi</span>
+              <div className="space-y-3">
+                {/* Header info */}
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">No. Referensi</span>
                   <span className="text-sm font-bold text-slate-900 font-manrope">{generateReferenceNumber(selected.id)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Nama Pemohon</span>
-                  <span className="text-sm font-bold text-slate-900">{selected.makam?.applicant_name || '-'}</span>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    selected.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                    selected.status === 'REJECTED' ? 'bg-slate-100 text-slate-700' :
+                    selected.status === 'REVISION' || selected.status === 'NEED_REVISION' ? 'bg-rose-100 text-rose-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>
+                    {selected.status === 'PENDING' ? 'Menunggu' :
+                     selected.status === 'APPROVED' ? 'Disetujui' :
+                     selected.status === 'NEED_REVISION' ? 'Perlu Revisi' :
+                     selected.status === 'REVISION' ? 'Revisi' :
+                     selected.status === 'REJECTED' ? 'Ditolak' : selected.status}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Nama Almarhum</span>
-                  <span className="text-sm font-bold text-slate-900">{selected.makam?.deceased_name || selected.makam?.nik || '-'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Tanggal Pengajuan</span>
-                  <span className="text-sm font-bold text-slate-900">
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Pengajuan</span>
+                  <span className="text-xs font-semibold text-slate-700">
                     {selected.created_at ? new Date(selected.created_at).toLocaleDateString('id-ID', {
                       day: 'numeric', month: 'long', year: 'numeric'
                     }) : '-'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Lokasi Makam</span>
-                  <span className="text-sm font-bold text-slate-900">
+
+                {/* Applicant Data */}
+                <div className="pt-3 pb-1">
+                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Data Pemohon</p>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nama Lengkap</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right max-w-[60%]">{selected.makam?.applicant_name || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right max-w-[60%]">{selected.makam?.applicant_email || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">No. WhatsApp</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right">+62{selected.makam?.applicant_phone || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hubungan</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right">{selected.makam?.relationship || '-'}</span>
+                </div>
+
+                {/* Deceased Data */}
+                <div className="pt-3 pb-1">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Data Almarhum</p>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">NIK</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right font-mono">{selected.makam?.nik || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nama Lengkap</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right max-w-[60%]">{selected.makam?.deceased_name || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Wafat</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right">
+                    {selected.makam?.deceased_date ? new Date(selected.makam.deceased_date).toLocaleDateString('id-ID', {
+                      day: 'numeric', month: 'long', year: 'numeric'
+                    }) : '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Agama</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right">{selected.makam?.religion || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Pemakaman</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right">
+                    {selected.makam?.burial_date ? new Date(selected.makam.burial_date).toLocaleDateString('id-ID', {
+                      day: 'numeric', month: 'long', year: 'numeric'
+                    }) : 'Belum ditentukan'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lokasi Makam</span>
+                  <span className="text-xs font-semibold text-slate-700 text-right">
                     {selected.makam?.blok && selected.makam?.blok !== 'TBA' 
-                      ? `Blok ${selected.makam.blok}, Nomor ${selected.makam.nomor || '-'}`
+                      ? `Blok ${selected.makam.blok}, No. ${selected.makam.nomor || '-'}`
                       : 'Belum ditentukan'}
                   </span>
                 </div>
