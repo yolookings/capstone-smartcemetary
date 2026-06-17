@@ -29,6 +29,7 @@ interface Makam {
   deceased_date: string | null;
   nik: string | null;
   applicant_name: string | null;
+  applicant_email: string | null;
   applicant_phone: string | null;
   relationship: string | null;
   religion: string | null;
@@ -322,6 +323,7 @@ export default function PengajuanDetailPage({ params }: Props) {
             phone={pengajuan.profiles?.phone || null}
             role="USER"
             applicantName={makamData?.applicant_name || null}
+            applicantEmail={makamData?.applicant_email || null}
             applicantPhone={makamData?.applicant_phone || null}
           />
 
@@ -337,18 +339,6 @@ export default function PengajuanDetailPage({ params }: Props) {
             nomor={makamData?.nomor || null}
             religion={makamData?.religion || null}
             burialDate={makamData?.burial_date || null}
-          />
-
-          {/* Grave Allocation */}
-          <GraveAllocation
-            pengajuanId={pengajuan.id}
-            currentPlotId={makamData?.plot_id || null}
-            currentBlok={makamData?.blok || null}
-            currentNomor={makamData?.nomor || null}
-            graveStatus={makamData?.status || null}
-            pengajuanStatus={pengajuan.status}
-            onAllocate={handleAllocate}
-            onRefresh={handleRefresh}
           />
 
           {/* Documents Section */}
@@ -395,6 +385,18 @@ export default function PengajuanDetailPage({ params }: Props) {
               )}
             </div>
           </div>
+
+          {/* Grave Allocation — Alokasi Makam */}
+          <GraveAllocation
+            pengajuanId={pengajuan.id}
+            currentPlotId={makamData?.plot_id || null}
+            currentBlok={makamData?.blok || null}
+            currentNomor={makamData?.nomor || null}
+            graveStatus={makamData?.status || null}
+            pengajuanStatus={pengajuan.status}
+            onAllocate={handleAllocate}
+            onRefresh={handleRefresh}
+          />
 
           {/* Timeline */}
           <TimelineWidget events={timelineEvents} />

@@ -302,10 +302,10 @@ export function GraveAllocation({
             <MapPin className="text-primary" size={20} />
           </div>
           <div>
-            <h3 className="font-bold text-slate-900 font-manrope">Alokasi Lokasi Makam</h3>
+            <h3 className="font-bold text-slate-900 font-manrope">Alokasi Makam</h3>
             <p className="text-xs text-slate-400 font-medium">
               {mode === "auto"
-                ? "Sistem otomatis memilih blok & petak berikutnya"
+                ? "Otomatis memilih blok & petak berikutnya"
                 : "Pilih blok, sistem akan mengalokasikan petak tersedia berikutnya"}
             </p>
           </div>
