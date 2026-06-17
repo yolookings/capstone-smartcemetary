@@ -29,6 +29,7 @@ interface Makam {
   deceased_date: string | null;
   nik: string | null;
   applicant_name: string | null;
+  applicant_email: string | null;
   applicant_phone: string | null;
   relationship: string | null;
   religion: string | null;
@@ -322,6 +323,7 @@ export default function PengajuanDetailPage({ params }: Props) {
             phone={pengajuan.profiles?.phone || null}
             role="USER"
             applicantName={makamData?.applicant_name || null}
+            applicantEmail={makamData?.applicant_email || null}
             applicantPhone={makamData?.applicant_phone || null}
           />
 
