@@ -13,8 +13,10 @@ import {
   FileText,
   Sparkles,
   Map,
+  Fingerprint,
 } from "lucide-react";
 import { ConfirmModal } from "./confirm-modal";
+import { generateReferenceNumber } from "@/lib/reference-number";
 
 interface Cemetery {
   id: string;
@@ -215,27 +217,31 @@ export function VerificationPanel({
             </div>
           </div>
 
-          {/* Metadata */}
-          <div className="space-y-3 mb-6">
-            <div className="flex items-center justify-between py-2 border-b border-slate-50">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID Pengajuan</span>
-              <span className="text-sm font-mono font-bold text-slate-800">#{pengajuanId.slice(0, 8).toUpperCase()}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-slate-50">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tanggal Dibuat</span>
-              <span className="text-xs font-medium text-slate-600">{formatDate(createdAt)}</span>
-            </div>
-            {updatedAt && (
-              <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Terakhir Diperbarui</span>
-                <span className="text-xs font-medium text-slate-600">{formatDate(updatedAt)}</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between py-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dokumen</span>
-              <span className="text-xs font-medium text-slate-600">{documentCount} file</span>
-            </div>
-          </div>
+  {/* Metadata */}
+  <div className="space-y-3 mb-6">
+    <div className="flex items-center justify-between py-2 border-b border-slate-50 gap-4">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">No. Referensi</span>
+      <span className="text-sm font-bold text-slate-800 font-manrope text-right break-all">{generateReferenceNumber(pengajuanId)}</span>
+    </div>
+    <div className="flex items-center justify-between py-2 border-b border-slate-50 gap-4">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">ID Pengajuan</span>
+      <span className="text-xs font-mono font-bold text-slate-500 text-right">#{pengajuanId.slice(0, 8).toUpperCase()}</span>
+    </div>
+    <div className="flex items-center justify-between py-2 border-b border-slate-50 gap-4">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Tanggal Dibuat</span>
+      <span className="text-xs font-medium text-slate-600 text-right">{formatDate(createdAt)}</span>
+    </div>
+    {updatedAt && (
+      <div className="flex items-center justify-between py-2 border-b border-slate-50 gap-4">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Terakhir Diperbarui</span>
+        <span className="text-xs font-medium text-slate-600 text-right">{formatDate(updatedAt)}</span>
+      </div>
+    )}
+    <div className="flex items-center justify-between py-2 gap-4">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Dokumen</span>
+      <span className="text-xs font-medium text-slate-600 text-right">{documentCount} file</span>
+    </div>
+  </div>
 
           {/* Admin Notes */}
           {notes && (

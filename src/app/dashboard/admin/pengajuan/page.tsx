@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, FileText, Clock, CheckCircle, XCircle, AlertCircle, Filter, Search, RefreshCw, Inbox } from "lucide-react";
+import { Eye, FileText, Clock, CheckCircle, XCircle, AlertCircle, Filter, Search, RefreshCw, Inbox, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { generateReferenceNumber } from "@/lib/reference-number";
 
 interface PengajuanWithRelations {
   id: string;
@@ -15,7 +16,9 @@ interface PengajuanWithRelations {
     full_name: string;
   };
   makam?: {
+    applicant_name: string;
     deceased_name: string;
+    applicant_phone: string;
     blok: string;
     nomor: string;
   };
@@ -39,7 +42,7 @@ export default function AdminPengajuanPage() {
       
       const { data, error: fetchError } = await supabase
         .from('pengajuan')
-        .select('*, profiles(email, full_name)')
+        .select('*, profiles(email, full_name), makam(applicant_name, deceased_name, applicant_phone, blok, nomor)')
         .order('created_at', { ascending: false });
 
       if (fetchError) {
@@ -51,7 +54,8 @@ export default function AdminPengajuanPage() {
 
       const enrichedData: PengajuanWithRelations[] = (data || []).map(p => ({
         ...p,
-        profiles: p.profiles || null
+        profiles: p.profiles || null,
+        makam: Array.isArray(p.makam) ? (p.makam[0] || null) : (p.makam || null),
       }));
       
       setPengajuanList(enrichedData);
@@ -236,6 +240,7 @@ export default function AdminPengajuanPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-neutral text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  <th className="text-left px-8 py-5">No. Referensi</th>
                   <th className="text-left px-8 py-5">Pemohon</th>
                   <th className="text-left px-8 py-5">Status</th>
                   <th className="text-left px-8 py-5">Tanggal</th>
@@ -246,12 +251,16 @@ export default function AdminPengajuanPage() {
                 {filteredList.map((p) => (
                   <tr key={p.id} className="hover:bg-neutral transition-all">
                     <td className="px-8 py-5">
+                      <p className="text-sm font-bold text-slate-900 font-manrope">{generateReferenceNumber(p.id)}</p>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: #{p.id.slice(0, 8).toUpperCase()}</p>
+                    </td>
+                    <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center text-white font-bold">
-                          {p.profiles?.full_name?.charAt(0) || p.profiles?.email?.charAt(0) || '?'}
+                          {(p.makam?.applicant_name || p.profiles?.full_name)?.charAt(0) || p.profiles?.email?.charAt(0) || '?'}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-900">{p.profiles?.full_name || 'Unknown'}</p>
+                          <p className="text-sm font-bold text-slate-900">{p.makam?.applicant_name || p.profiles?.full_name || 'Unknown'}</p>
                           <p className="text-xs text-slate-400 font-medium">{p.profiles?.email || '-'}</p>
                         </div>
                       </div>
