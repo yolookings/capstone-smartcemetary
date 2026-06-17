@@ -339,18 +339,6 @@ export default function PengajuanDetailPage({ params }: Props) {
             burialDate={makamData?.burial_date || null}
           />
 
-          {/* Grave Allocation */}
-          <GraveAllocation
-            pengajuanId={pengajuan.id}
-            currentPlotId={makamData?.plot_id || null}
-            currentBlok={makamData?.blok || null}
-            currentNomor={makamData?.nomor || null}
-            graveStatus={makamData?.status || null}
-            pengajuanStatus={pengajuan.status}
-            onAllocate={handleAllocate}
-            onRefresh={handleRefresh}
-          />
-
           {/* Documents Section */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
             <div className="p-6 lg:p-8">
@@ -395,6 +383,18 @@ export default function PengajuanDetailPage({ params }: Props) {
               )}
             </div>
           </div>
+
+          {/* Grave Allocation — Alokasi Makam */}
+          <GraveAllocation
+            pengajuanId={pengajuan.id}
+            currentPlotId={makamData?.plot_id || null}
+            currentBlok={makamData?.blok || null}
+            currentNomor={makamData?.nomor || null}
+            graveStatus={makamData?.status || null}
+            pengajuanStatus={pengajuan.status}
+            onAllocate={handleAllocate}
+            onRefresh={handleRefresh}
+          />
 
           {/* Timeline */}
           <TimelineWidget events={timelineEvents} />
