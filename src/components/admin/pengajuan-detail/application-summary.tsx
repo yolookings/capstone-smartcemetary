@@ -1,5 +1,6 @@
-import { FileText, Clock, User, CheckCircle, XCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { FileText, Clock, User, CheckCircle, XCircle, AlertCircle, RefreshCw, Fingerprint } from "lucide-react";
 import { EmptyField } from "./empty-field";
+import { generateReferenceNumber } from "@/lib/reference-number";
 
 interface ApplicationSummaryProps {
   id: string;
@@ -57,21 +58,25 @@ function formatDate(dateStr: string) {
 
 export function ApplicationSummary({ id, applicantName, status, documentCount, createdAt, updatedAt }: ApplicationSummaryProps) {
   const s = getStatus(status);
+  const refNumber = generateReferenceNumber(id);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="p-6 lg:p-8">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                <FileText className="text-primary" size={20} />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                <FileText className="text-primary" size={22} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">ID Pengajuan</p>
-                <h1 className="text-lg lg:text-xl font-bold text-slate-900 truncate font-manrope">
-                  #{id.slice(0, 8).toUpperCase()}
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">No. Referensi</p>
+                <h1 className="text-xl lg:text-2xl font-bold text-slate-900 font-manrope break-all">
+                  {refNumber}
                 </h1>
+                <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                  ID: #{id.slice(0, 8).toUpperCase()}
+                </p>
               </div>
             </div>
           </div>
@@ -79,27 +84,27 @@ export function ApplicationSummary({ id, applicantName, status, documentCount, c
           <div className="flex flex-wrap items-center gap-4 lg:gap-6">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <User size={16} className="shrink-0 text-slate-400" />
-              <span className="font-medium truncate max-w-[200px]">
+              <span className="font-medium truncate max-w-[220px]">
                 {applicantName || <EmptyField label="Nama Tidak Tersedia" />}
               </span>
             </div>
 
             <div className="h-6 w-px bg-slate-200 hidden lg:block" />
 
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-slate-500 whitespace-nowrap">
               <Clock size={16} className="shrink-0 text-slate-400" />
               <span className="font-medium">{formatDate(createdAt)}</span>
             </div>
 
             <div className="h-6 w-px bg-slate-200 hidden lg:block" />
 
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${s.bg} ${s.text}`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap ${s.bg} ${s.text}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
               {s.icon}
               {s.label}
             </span>
 
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium whitespace-nowrap">
               <FileText size={14} />
               <span>{documentCount} dokumen</span>
             </div>
@@ -107,7 +112,7 @@ export function ApplicationSummary({ id, applicantName, status, documentCount, c
             {updatedAt && (
               <>
                 <div className="h-6 w-px bg-slate-200 hidden lg:block" />
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-400 whitespace-nowrap">
                   <RefreshCw size={14} className="shrink-0" />
                   <span>Diperbarui: {formatDate(updatedAt)}</span>
                 </div>
