@@ -1,4 +1,9 @@
-const FONNTE_API_URL = "https://api.fonnte.com/send";
+import {
+  sendTextMessage as kirimdevSendText,
+  sendTemplateMessage as kirimdevSendTemplate,
+  validateKirimdevConfig,
+} from "@/lib/kirimdev";
+
 const DASHBOARD_URL = "https://smartcemetary.web.id/";
 
 export function normalizePhone(phone: string): string {
@@ -25,17 +30,22 @@ export async function sendWhatsAppMessage(
   target: string,
   message: string,
   options?: {
-    delay?: string;
-    typing?: boolean;
-    url?: string;
-    filename?: string;
+    /** Template name for template-based messages (bypasses 24h window) */
+    template?: string;
+    /** Language code for template (default: "id") */
+    templateLanguage?: string;
+    /** Template component parameters */
+    templateComponents?: Array<{
+      type: "header" | "body" | "footer" | "button";
+      parameters?: Array<{ type: "text"; text: string }>;
+      index?: number;
+    }>;
   },
 ): Promise<{ success: boolean; error?: string; response?: unknown }> {
-  const token = process.env.FONNTE_TOKEN;
-
-  if (!token) {
-    console.error("[WA] FONNTE_TOKEN not configured");
-    return { success: false, error: "FONNTE_TOKEN not configured" };
+  const configCheck = validateKirimdevConfig();
+  if (!configCheck.valid) {
+    console.error("[WA] Kirimdev not configured:", configCheck.errors.join(", "));
+    return { success: false, error: "Kirimdev not configured: " + configCheck.errors.join(", ") };
   }
 
   if (!target || !message) {
@@ -50,49 +60,27 @@ export async function sendWhatsAppMessage(
   }
 
   try {
-    const formData = new URLSearchParams();
-    formData.append("target", normalizedTarget);
-    formData.append("message", message);
+    if (options?.template) {
+      const result = await kirimdevSendTemplate(
+        normalizedTarget,
+        options.template,
+        options.templateLanguage || "id",
+        options.templateComponents,
+      );
 
-    if (options?.delay) {
-      formData.append("delay", options.delay);
-    }
-    if (options?.typing) {
-      formData.append("typing", "true");
-    }
-    if (options?.url) {
-      formData.append("url", options.url);
-    }
-    if (options?.filename) {
-      formData.append("filename", options.filename);
+      if (result.success) {
+        return { success: true, response: result.data };
+      }
+      return { success: false, error: result.error, response: result };
     }
 
-    const response = await fetch(FONNTE_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData.toString(),
-    });
+    const result = await kirimdevSendText(normalizedTarget, message);
 
-    const result = await response.json();
-
-    console.log("[WA] Send result:", {
-      target: normalizedTarget,
-      status: result.status,
-      id: result.id,
-    });
-
-    if (response.ok && result.status === true) {
-      return { success: true, response: result };
+    if (result.success) {
+      return { success: true, response: result.data };
     }
 
-    return {
-      success: false,
-      error: result.message || "Failed",
-      response: result,
-    };
+    return { success: false, error: result.error, response: result };
   } catch (error) {
     console.error("[WA] Error:", error);
     return {
