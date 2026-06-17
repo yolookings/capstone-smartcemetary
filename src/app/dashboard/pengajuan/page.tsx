@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Clock, CheckCircle, AlertCircle, Plus, Search, User, MapPin, Calendar, ArrowRight, Phone, MessageCircle, XCircle } from "lucide-react";
+import { FileText, Clock, CheckCircle, AlertCircle, Plus, Search, User, MapPin, Calendar, ArrowRight, Phone, MessageCircle, XCircle, Eye } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { generateReferenceNumber } from "@/lib/reference-number";
 
 export default function PengajuanPage() {
   const [pengajuanList, setPengajuanList] = useState<any[]>([]);
@@ -320,10 +321,13 @@ export default function PengajuanPage() {
                           <Icon size={16} className={status.text} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-900 text-sm truncate">
-                            Pengajuan #{p.id.slice(0, 8).toUpperCase()}
+                          <p className="font-bold text-slate-900 text-sm font-manrope truncate">
+                            {generateReferenceNumber(p.id)}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-[10px] text-slate-400 font-mono">
+                            #{p.id.slice(0, 8).toUpperCase()}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-0.5">
                             {new Date(p.created_at).toLocaleDateString('id-ID')}
                           </p>
                         </div>
@@ -352,8 +356,8 @@ export default function PengajuanPage() {
               
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ID Pengajuan</span>
-                  <span className="text-sm font-bold text-slate-900">#{selected.id.slice(0, 8).toUpperCase()}</span>
+                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">No. Referensi</span>
+                  <span className="text-sm font-bold text-slate-900 font-manrope">{generateReferenceNumber(selected.id)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Nama Pemohon</span>
@@ -361,7 +365,7 @@ export default function PengajuanPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Nama Almarhum</span>
-                  <span className="text-sm font-bold text-slate-900">{selected.makam?.nik || '-'}</span>
+                  <span className="text-sm font-bold text-slate-900">{selected.makam?.deceased_name || selected.makam?.nik || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Tanggal Pengajuan</span>
