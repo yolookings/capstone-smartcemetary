@@ -100,6 +100,7 @@ export default function Header() {
                     </div>
                     {isAdmin && <Link href="/dashboard/admin" className="block w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Dashboard Admin</Link>}
                     {isUser && <Link href="/dashboard" className="block w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Dashboard</Link>}
+                    <Link href="/dashboard/pengaturan" className="block w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Account Settings</Link>
                     <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</button>
                   </div>
                 )}
@@ -143,7 +144,7 @@ export default function Header() {
             {user && (
               <>
                 <div className="px-4 py-2 mt-2"><p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Akun Saya</p></div>
-                {isAdmin ? (
+                  {isAdmin ? (
                   <Link href="/dashboard/admin" onClick={() => setDrawerOpen(false)} className="block py-3 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"><div className="flex items-center gap-3"><LayoutDashboard size={18} className="text-slate-400" />Dashboard Admin</div></Link>
                 ) : (
                   <>
@@ -152,6 +153,7 @@ export default function Header() {
                     <Link href="/dashboard/pengajuan" onClick={() => setDrawerOpen(false)} className="block py-3 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"><div className="flex items-center gap-3"><FileText size={18} className="text-slate-400" />Status Pengajuan</div></Link>
                   </>
                 )}
+                <Link href="/dashboard/pengaturan" onClick={() => setDrawerOpen(false)} className="block py-3 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"><div className="flex items-center gap-3"><User size={18} className="text-slate-400" />Account Settings</div></Link>
               </>
             )}
           </nav>

@@ -7,6 +7,7 @@ interface ApplicantInfoProps {
   phone: string | null;
   role: string | null;
   applicantName: string | null;
+  applicantEmail: string | null;
   applicantPhone: string | null;
 }
 
@@ -26,7 +27,7 @@ function FieldRow({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-export function ApplicantInfo({ fullName, email, phone, role, applicantName, applicantPhone }: ApplicantInfoProps) {
+export function ApplicantInfo({ fullName, email, phone, role, applicantName, applicantEmail, applicantPhone }: ApplicantInfoProps) {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div className="p-6 lg:p-8">
@@ -53,8 +54,13 @@ export function ApplicantInfo({ fullName, email, phone, role, applicantName, app
           />
           <FieldRow
             icon={<Mail size={16} />}
-            label="Email"
+            label="Email (Akun)"
             value={email}
+          />
+          <FieldRow
+            icon={<Mail size={16} />}
+            label="Email Pemohon (Pengajuan)"
+            value={applicantEmail}
           />
           <FieldRow
             icon={<Phone size={16} />}
