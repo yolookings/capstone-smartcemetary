@@ -183,7 +183,8 @@ export async function POST(req: Request) {
         userPhone,
         pengajuanId,
         applicantName,
-        nik
+        deceasedName: deceasedName || applicantName,
+        createdDate: new Date().toISOString(),
       }).catch(err => console.error("[WA] Submit confirm failed:", err));
     }
 

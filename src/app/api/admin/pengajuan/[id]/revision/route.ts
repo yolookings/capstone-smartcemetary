@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { notifyUserStatusChange } from "@/lib/whatsapp";
+import { isWhatsAppConfigured } from "@/lib/whatsapp-sender";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -90,15 +91,22 @@ export async function POST(
       }
     );
     const pengajuanData = await pengajuanRes.json();
-    const profile = pengajuanData[0]?.profiles;
+    const row = pengajuanData[0];
+    const profile = row?.profiles;
     const userPhone = profile?.phone || profile?.whatsapp_number;
 
-    if (userPhone) {
+    if (userPhone && isWhatsAppConfigured()) {
+      const makam = Array.isArray(row?.makam) ? row.makam[0] : row?.makam;
+      const applicantName = makam?.applicant_name || profile?.full_name || "Pemohon";
+      const deceasedName = makam?.deceased_name || "Almarhum";
+
       notifyUserStatusChange({
         userPhone: userPhone,
         status: "NEED_REVISION",
         pengajuanId: id,
-        revisionNote: revisionNote
+        applicantName,
+        deceasedName,
+        revisionNote: revisionNote || "",
       }).catch(console.error);
     }
 
