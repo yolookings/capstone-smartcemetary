@@ -54,21 +54,29 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          # Blok env diletakkan di sini (sejajar dengan 'with')
+          # Mengambil data dari Secrets GitHub sesuai dengan screenshot kamu
           AI_MODEL: ${{ secrets.AI_MODEL }}
           AI_FALLBACK_MODEL: ${{ secrets.AI_FALLBACK_MODEL }}
           AI_TIMEOUT_MS: ${{ secrets.AI_TIMEOUT_MS }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          FONNTE_TOKEN: ${{ secrets.FONNTE_TOKEN }}
+          OPENROUTER_API_URL: ${{ secrets.OPENROUTER_API_URL }}
+          KIRIMDEV_API_KEY: ${{ secrets.KIRIMDEV_API_KEY }}
+          KIRIMDEV_PHONE_NUMBER_ID: ${{ secrets.KIRIMDEV_PHONE_NUMBER_ID }}
+          ADMIN_WHATSAPP_NUMBER: ${{ secrets.ADMIN_WHATSAPP_NUMBER }}
+
+          # Mengambil data dari Env Global (bagian atas file ini)
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
           DATABASE_URL: ${{ env.DATABASE_URL }}
           NEXTAUTH_SECRET: ${{ env.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ env.NEXTAUTH_URL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: AI_MODEL,AI_FALLBACK_MODEL,AI_TIMEOUT_MS,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,DATABASE_URL,NEXTAUTH_SECRET,NEXTAUTH_URL
+          # Mendaftarkan semua variabel agar bisa dibaca di dalam blok script VPS
+          envs: AI_MODEL,AI_FALLBACK_MODEL,AI_TIMEOUT_MS,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,DATABASE_URL,NEXTAUTH_SECRET,NEXTAUTH_URL,FONNTE_TOKEN,OPENROUTER_API_URL,KIRIMDEV_API_KEY,KIRIMDEV_PHONE_NUMBER_ID,ADMIN_WHATSAPP_NUMBER
           script: |
             cd ~/capstone-smartcemetary
 
@@ -77,7 +85,7 @@ jobs:
             git checkout ${{ github.ref_name }}
             git pull origin ${{ github.ref_name }}
 
-            # 2. Membuat & Memperbarui file .env di VPS
+            # 2. Membuat & Memperbarui file .env secara otomatis di VPS
             echo "AI_MODEL=${AI_MODEL}" > .env
             echo "AI_FALLBACK_MODEL=${AI_FALLBACK_MODEL}" >> .env
             echo "AI_TIMEOUT_MS=${AI_TIMEOUT_MS}" >> .env
@@ -87,12 +95,17 @@ jobs:
             echo "DATABASE_URL=${DATABASE_URL}" >> .env
             echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> .env
             echo "NEXTAUTH_URL=${NEXTAUTH_URL}" >> .env
+            echo "FONNTE_TOKEN=${FONNTE_TOKEN}" >> .env
+            echo "OPENROUTER_API_URL=${OPENROUTER_API_URL}" >> .env
+            echo "KIRIMDEV_API_KEY=${KIRIMDEV_API_KEY}" >> .env
+            echo "KIRIMDEV_PHONE_NUMBER_ID=${KIRIMDEV_PHONE_NUMBER_ID}" >> .env
+            echo "ADMIN_WHATSAPP_NUMBER=${ADMIN_WHATSAPP_NUMBER}" >> .env
 
-            # 3. Install dan build
+            # 3. Install dan build ulang di VPS
             npm install
             npm run build
 
-            # 4. Dinamis Port & Nama PM2
+            # 4. Dinamis Port & Nama PM2 berdasarkan branch
             if [ "${{ github.ref_name }}" = "main" ]; then
               PM2_APP="smartcemetary"
               PORT=3000
@@ -101,7 +114,7 @@ jobs:
               PORT=3001
             fi
 
-            # 5. Jalankan aplikasi via PM2
+            # 5. Jalankan atau restart aplikasi via PM2
             if pm2 list | grep -q "$PM2_APP"; then
               echo "Aplikasi '$PM2_APP' sedang berjalan. Melakukan restart..."
               pm2 restart "$PM2_APP"

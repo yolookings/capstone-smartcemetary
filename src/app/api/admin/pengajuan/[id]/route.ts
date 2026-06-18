@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { notifyUserStatusChange } from "@/lib/whatsapp";
+import { notifyUserStatusChange, notifyPlotAllocated } from "@/lib/whatsapp";
+import { isWhatsAppConfigured } from "@/lib/whatsapp-sender";
 import pool from "@/lib/db";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -392,6 +393,12 @@ async function sendNotification(
   nomor: string | null
 ) {
   try {
+    if (!isWhatsAppConfigured()) {
+      console.log("[ADMIN] WhatsApp not configured, skipping notification");
+      return;
+    }
+
+    // Fetch pengajuan with makam and profile data
     const pengajuanRes = await fetch(
       `${SUPABASE_URL}/rest/v1/pengajuan?id=eq.${pengajuanId}&select=*,profiles(phone,whatsapp_number,full_name),makam(*)`,
       {
@@ -402,18 +409,53 @@ async function sendNotification(
       }
     );
     const pengajuanData = await pengajuanRes.json();
-    const profile = pengajuanData[0]?.profiles;
+    const row = pengajuanData[0];
+    const profile = row?.profiles;
     const userPhone = profile?.phone || profile?.whatsapp_number;
 
-    if (userPhone) {
-      console.log("[ADMIN] Sending WhatsApp to:", userPhone, "status:", status);
-      notifyUserStatusChange({
+    if (!userPhone) {
+      console.log("[ADMIN] No user phone found, skipping WhatsApp");
+      return;
+    }
+
+    // Extract applicant and deceased data from makam
+    const makam = Array.isArray(row?.makam) ? row.makam[0] : row?.makam;
+    const applicantName = makam?.applicant_name || profile?.full_name || "Pemohon";
+    const deceasedName = makam?.deceased_name || "Almarhum";
+    const burialDate = makam?.burial_date || "";
+
+    const plotAllocated = blok && nomor && blok !== "TBA" && nomor !== "TBA";
+
+    // Route to the appropriate template based on status and allocation
+    if (status === "APPROVED") {
+      await notifyUserStatusChange({
         userPhone,
-        status: status as "APPROVED" | "REJECTED" | "NEED_REVISION",
         pengajuanId,
-        blok: blok || undefined,
-        nomor: nomor || undefined,
-        revisionNote: notes || undefined,
+        applicantName,
+        deceasedName,
+        status: "APPROVED",
+        blok: blok || makam?.blok || "TBA",
+        nomor: nomor || makam?.nomor || "TBA",
+      }).catch(e => console.error("[WA ERROR]", e));
+    } else if (status === "REJECTED") {
+      await notifyUserStatusChange({
+        userPhone,
+        pengajuanId,
+        applicantName,
+        deceasedName,
+        status: "REJECTED",
+        rejectionReason: notes || "",
+      }).catch(e => console.error("[WA ERROR]", e));
+    } else if (plotAllocated) {
+      // Plot allocated without status change (e.g., PENDING → PENDING + allocation)
+      await notifyPlotAllocated({
+        userPhone,
+        pengajuanId,
+        applicantName,
+        deceasedName,
+        blok: blok!,
+        nomor: nomor!,
+        burialDate,
       }).catch(e => console.error("[WA ERROR]", e));
     }
   } catch (e) {

@@ -13,6 +13,7 @@ import { VerificationPanel } from "@/components/admin/pengajuan-detail/verificat
 import { DocumentCard } from "@/components/admin/pengajuan-detail/document-card";
 import { GraveAllocation } from "@/components/admin/pengajuan-detail/grave-allocation";
 import { TimelineWidget } from "@/components/admin/pengajuan-detail/timeline-widget";
+import { WhatsAppLog } from "@/components/admin/pengajuan-detail/whatsapp-log";
 import type { TimelineEvent } from "@/components/admin/pengajuan-detail/timeline-widget";
 
 interface Dokumen {
@@ -400,6 +401,9 @@ export default function PengajuanDetailPage({ params }: Props) {
 
           {/* Timeline */}
           <TimelineWidget events={timelineEvents} />
+
+          {/* WhatsApp Log */}
+          <WhatsAppLog pengajuanId={id} />
         </div>
 
         {/* Right Column — Verification Panel */}

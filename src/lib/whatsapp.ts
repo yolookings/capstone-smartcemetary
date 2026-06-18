@@ -3,6 +3,14 @@ import {
   sendTemplateMessage as kirimdevSendTemplate,
   validateKirimdevConfig,
 } from "@/lib/kirimdev";
+import {
+  sendApplicationCreated,
+  sendApplicationApproved,
+  sendApplicationRejected,
+  sendRevisionRequest,
+  sendGravePlotAllocated,
+  isWhatsAppConfigured,
+} from "@/lib/whatsapp-sender";
 
 const DASHBOARD_URL = "https://smartcemetary.web.id/";
 
@@ -30,11 +38,8 @@ export async function sendWhatsAppMessage(
   target: string,
   message: string,
   options?: {
-    /** Template name for template-based messages (bypasses 24h window) */
     template?: string;
-    /** Language code for template (default: "id") */
     templateLanguage?: string;
-    /** Template component parameters */
     templateComponents?: Array<{
       type: "header" | "body" | "footer" | "button";
       parameters?: Array<{ type: "text"; text: string }>;
@@ -203,55 +208,129 @@ export async function notifyAdminRevisionResubmission(data: {
   );
 }
 
+/* ── User Status Change Notifications (Template-based) ────── */
+
 export async function notifyUserStatusChange(data: {
   userPhone: string;
+  pengajuanId: string;
+  applicantName: string;
+  deceasedName: string;
   status: "APPROVED" | "REJECTED" | "NEED_REVISION";
-  pengajuanId?: string;
   blok?: string;
   nomor?: string;
   revisionNote?: string;
+  rejectionReason?: string;
+  burialDate?: string;
+  revisionDocs?: string;
 }) {
-  console.log("[WA] notifyUserStatusChange called:", data);
+  console.log("[WA] notifyUserStatusChange called:", data.status, data.pengajuanId);
+
+  if (!isWhatsAppConfigured()) {
+    console.log("[WA] Skipping — Kirimdev not configured");
+    return { success: false, error: "Kirimdev not configured" };
+  }
+
+  if (!isValidPhone(data.userPhone)) {
+    console.log("[WA] Skipping — invalid phone:", data.userPhone);
+    return { success: false, error: "Invalid phone" };
+  }
+
   switch (data.status) {
     case "APPROVED":
-      return sendWhatsAppMessage(
+      return sendApplicationApproved(
+        data.pengajuanId,
+        data.applicantName,
+        data.deceasedName,
         data.userPhone,
-        buildApprovedMessage({
-          pengajuanId: data.pengajuanId,
-          blok: data.blok,
-          nomor: data.nomor,
-        }),
+        data.blok || "TBA",
+        data.nomor || "TBA"
       );
+
     case "NEED_REVISION":
-      return sendWhatsAppMessage(
+      return sendRevisionRequest(
+        data.pengajuanId,
+        data.applicantName,
+        data.deceasedName,
         data.userPhone,
-        buildRevisionNeededMessage({
-          pengajuanId: data.pengajuanId,
-          revisionNote: data.revisionNote,
-        }),
+        data.revisionDocs || "",
+        data.revisionNote || ""
       );
+
     case "REJECTED":
-      return sendWhatsAppMessage(
+      return sendApplicationRejected(
+        data.pengajuanId,
+        data.applicantName,
+        data.deceasedName,
         data.userPhone,
-        buildRejectedMessage({ pengajuanId: data.pengajuanId }),
+        data.rejectionReason || ""
       );
+
+    default:
+      return { success: false, error: `Status tidak dikenal: ${data.status}` };
   }
 }
+
+/* ── Plot Allocation Notification (Template-based) ────────── */
+
+export async function notifyPlotAllocated(data: {
+  userPhone: string;
+  pengajuanId: string;
+  applicantName: string;
+  deceasedName: string;
+  blok: string;
+  nomor: string;
+  burialDate: string;
+}) {
+  console.log("[WA] notifyPlotAllocated called:", data.pengajuanId);
+
+  if (!isWhatsAppConfigured()) {
+    console.log("[WA] Skipping — Kirimdev not configured");
+    return { success: false, error: "Kirimdev not configured" };
+  }
+
+  if (!isValidPhone(data.userPhone)) {
+    console.log("[WA] Skipping — invalid phone:", data.userPhone);
+    return { success: false, error: "Invalid phone" };
+  }
+
+  return sendGravePlotAllocated(
+    data.pengajuanId,
+    data.applicantName,
+    data.deceasedName,
+    data.userPhone,
+    data.blok,
+    data.nomor,
+    data.burialDate
+  );
+}
+
+/* ── Submission Confirmation (Template-based) ─────────────── */
 
 export async function notifyUserSubmissionConfirmation(data: {
   userPhone: string;
   pengajuanId: string;
   applicantName: string;
-  nik: string;
+  deceasedName: string;
+  createdDate: string;
 }) {
-  console.log("[WA] notifyUserSubmissionConfirmation called:", data);
-  return sendWhatsAppMessage(
+  console.log("[WA] notifyUserSubmissionConfirmation called:", data.pengajuanId);
+
+  if (!isWhatsAppConfigured()) {
+    console.log("[WA] Skipping — Kirimdev not configured");
+    return { success: false, error: "Kirimdev not configured" };
+  }
+
+  if (!isValidPhone(data.userPhone)) {
+    console.log("[WA] Skipping — invalid phone:", data.userPhone);
+    return { success: false, error: "Invalid phone" };
+  }
+
+  return sendApplicationCreated(
+    data.pengajuanId,
+    data.applicantName,
+    data.deceasedName,
     data.userPhone,
-    buildSubmissionConfirmation({
-      pengajuanId: data.pengajuanId,
-      applicantName: data.applicantName,
-      nik: data.nik,
-    }),
+    data.createdDate
   );
 }
 

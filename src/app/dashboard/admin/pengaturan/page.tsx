@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Save, AlertCircle, CheckCircle, Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { User, Save, AlertCircle, CheckCircle, Lock, Mail, Eye, EyeOff, MessageSquare, Send, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
 
 interface Profile {
@@ -325,6 +325,204 @@ export default function AdminPengaturanPage() {
               <>
                 <Lock size={18} />
                 Ubah Password
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── WhatsApp Integration ──────────────────────────────── */}
+      <WhatsAppSettingsCard />
+    </div>
+  );
+}
+
+/* ── WhatsApp Settings Card ─────────────────────────────────── */
+
+const TEMPLATES = [
+  { value: "application_created", label: "Pengajuan Dibuat" },
+  { value: "application_approved", label: "Pengajuan Disetujui" },
+  { value: "revision_request", label: "Permintaan Revisi" },
+  { value: "application_rejected", label: "Pengajuan Ditolak" },
+  { value: "grave_plot_allocated", label: "Alokasi Makam" },
+];
+
+function WhatsAppSettingsCard() {
+  const [configStatus, setConfigStatus] = useState<{
+    configured: boolean;
+    errors: string[];
+  } | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  const [testPhone, setTestPhone] = useState("");
+  const [testTemplate, setTestTemplate] = useState("application_created");
+  const [sending, setSending] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    async function checkConfig() {
+      try {
+        const res = await fetch("/api/whatsapp/send-test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: "check", template_name: "check" }),
+        });
+        if (res.status === 400) {
+          const data = await res.json();
+          if (data.error?.includes("tidak terkonfigurasi")) {
+            setConfigStatus({ configured: false, errors: [data.error] });
+          } else {
+            setConfigStatus({ configured: true, errors: [] });
+          }
+        } else if (res.status === 401 || res.status === 403) {
+          setConfigStatus({ configured: true, errors: [] });
+        } else {
+          setConfigStatus({ configured: true, errors: [] });
+        }
+      } catch {
+        setConfigStatus({ configured: false, errors: ["Tidak dapat memeriksa konfigurasi"] });
+      } finally {
+        setChecking(false);
+      }
+    }
+    checkConfig();
+  }, []);
+
+  const handleTestSend = async () => {
+    if (!testPhone) return;
+    setSending(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/whatsapp/send-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: testPhone, template_name: testTemplate }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTestResult({ success: true, message: "Test WhatsApp berhasil dikirim!" });
+      } else {
+        setTestResult({ success: false, message: data.error || "Gagal mengirim test" });
+      }
+    } catch {
+      setTestResult({ success: false, message: "Gagal terhubung ke server" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+          <MessageSquare className="text-green-600" size={20} />
+        </div>
+        <div>
+          <h3 className="font-bold text-slate-900">Integrasi WhatsApp</h3>
+          <p className="text-sm text-slate-500">Konfigurasi notifikasi WhatsApp via KirimDev</p>
+        </div>
+      </div>
+
+      {/* ── Configuration Status ──────────────────────────── */}
+      <div className="mb-6 p-4 bg-neutral rounded-xl">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Status Konfigurasi</p>
+        {checking ? (
+          <div className="flex items-center gap-2">
+            <Loader2 size={14} className="animate-spin text-primary" />
+            <span className="text-sm text-slate-500">Memeriksa...</span>
+          </div>
+        ) : configStatus?.configured ? (
+          <div className="flex items-center gap-2">
+            <CheckCircle size={16} className="text-emerald-600" />
+            <span className="text-sm font-medium text-emerald-700">Terkonfigurasi</span>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle size={16} className="text-amber-600" />
+              <span className="text-sm font-medium text-amber-700">Belum Terkonfigurasi</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Atur environment variable <code className="bg-slate-200 px-1 rounded">KIRIMDEV_API_KEY</code> dan{' '}
+              <code className="bg-slate-200 px-1 rounded">KIRIMDEV_PHONE_NUMBER_ID</code> di file .env.local untuk mengaktifkan WhatsApp.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Template Info ─────────────────────────────────── */}
+      <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2">Template Terdaftar</p>
+        <ul className="space-y-1">
+          {TEMPLATES.map((t) => (
+            <li key={t.value} className="text-xs text-blue-700 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+              <span className="font-mono text-[10px] text-blue-500">{t.value}</span>
+              <span>— {t.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ── Test Send ─────────────────────────────────────── */}
+      <div className="border-t border-slate-100 pt-6">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Uji Coba WhatsApp</p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Nomor Telepon Penerima (628xx)
+            </label>
+            <input
+              type="tel"
+              value={testPhone}
+              onChange={(e) => setTestPhone(e.target.value)}
+              placeholder="6281234567890"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Template
+            </label>
+            <select
+              value={testTemplate}
+              onChange={(e) => setTestTemplate(e.target.value)}
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm appearance-none bg-white"
+            >
+              {TEMPLATES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label} ({t.value})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {testResult && (
+            <div className={`flex items-center gap-2 text-sm ${testResult.success ? "text-emerald-600" : "text-red-600"}`}>
+              {testResult.success ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+              {testResult.message}
+            </div>
+          )}
+
+          <button
+            onClick={handleTestSend}
+            disabled={sending || !testPhone || !configStatus?.configured}
+            className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {sending ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Mengirim...
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                Kirim Test WhatsApp
               </>
             )}
           </button>
