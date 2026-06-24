@@ -119,25 +119,39 @@ export async function sendTextMessage(
       },
     );
 
-    const result = (await response.json()) as
-      | KirimdevSuccessResponse
-      | KirimdevErrorResponse;
+    const contentType = response.headers.get("content-type") || "";
+    const bodyText = await response.text();
 
     if (!response.ok) {
-      const err = result as KirimdevErrorResponse;
+      const isJson = contentType.includes("json");
+      let errorMsg: string;
+      let errorCode: string | undefined;
+      let requestId: string | undefined;
+
+      if (isJson) {
+        try {
+          const err = JSON.parse(bodyText) as KirimdevErrorResponse;
+          errorMsg = err.error?.message || `HTTP ${response.status}`;
+          errorCode = err.error?.code;
+          requestId = err.error?.request_id;
+        } catch {
+          errorMsg = `HTTP ${response.status}: ${bodyText.slice(0, 200)}`;
+        }
+      } else {
+        errorMsg = `HTTP ${response.status} — server returned HTML (check API key / phone number ID)`;
+      }
+
       console.error("[KIRIMDEV] Send text failed:", {
         to: normalizedTo,
-        error: err.error,
+        status: response.status,
+        error: errorMsg,
       });
-      return {
-        success: false,
-        error: err.error?.message || "Unknown error",
-        code: err.error?.code,
-        request_id: err.error?.request_id,
-      };
+      return { success: false, error: errorMsg, code: errorCode, request_id: requestId };
     }
 
-    const successResult = result as KirimdevSuccessResponse;
+    const result = JSON.parse(bodyText) as KirimdevSuccessResponse;
+    const successResult = result;
+
     console.log("[KIRIMDEV] Text sent:", {
       to: normalizedTo,
       messageId: successResult.data.id,
@@ -237,26 +251,38 @@ export async function sendTemplateMessage(
       },
     );
 
-    const result = (await response.json()) as
-      | KirimdevSuccessResponse
-      | KirimdevErrorResponse;
+    const contentType = response.headers.get("content-type") || "";
+    const bodyText = await response.text();
 
     if (!response.ok) {
-      const err = result as KirimdevErrorResponse;
+      const isJson = contentType.includes("json");
+      let errorMsg: string;
+      let errorCode: string | undefined;
+      let requestId: string | undefined;
+
+      if (isJson) {
+        try {
+          const err = JSON.parse(bodyText) as KirimdevErrorResponse;
+          errorMsg = err.error?.message || `HTTP ${response.status}`;
+          errorCode = err.error?.code;
+          requestId = err.error?.request_id;
+        } catch {
+          errorMsg = `HTTP ${response.status}: ${bodyText.slice(0, 200)}`;
+        }
+      } else {
+        errorMsg = `HTTP ${response.status} — server returned HTML (check API key / phone number ID / template name)`;
+      }
+
       console.error("[KIRIMDEV] Send template failed:", {
         to: normalizedTo,
         template: templateName,
-        error: err.error,
+        status: response.status,
+        error: errorMsg,
       });
-      return {
-        success: false,
-        error: err.error?.message || "Unknown error",
-        code: err.error?.code,
-        request_id: err.error?.request_id,
-      };
+      return { success: false, error: errorMsg, code: errorCode, request_id: requestId };
     }
 
-    const successResult = result as KirimdevSuccessResponse;
+    const successResult = JSON.parse(bodyText) as KirimdevSuccessResponse;
     console.log("[KIRIMDEV] Template sent:", {
       to: normalizedTo,
       template: templateName,

@@ -36,11 +36,10 @@ function formatDate(dateStr: string) {
 }
 
 const templateLabels: Record<string, string> = {
-  application_created: "Pengajuan Dibuat",
-  application_approved: "Pengajuan Disetujui",
-  revision_request: "Permintaan Revisi",
-  application_rejected: "Pengajuan Ditolak",
-  grave_plot_allocated: "Alokasi Makam",
+  pengajuan_dibuat: "Pengajuan Dibuat",
+  pengajuan_disetujui: "Pengajuan Disetujui",
+  permintaan_revisi: "Permintaan Revisi",
+  pengajuan_ditolak: "Pengajuan Ditolak",
 };
 
 export function WhatsAppLog({ pengajuanId }: WhatsAppLogProps) {
