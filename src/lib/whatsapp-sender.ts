@@ -106,13 +106,24 @@ export async function getLogById(logId: string): Promise<WhatsAppLog | null> {
 
 /* ── Template Component Builders ──────────────────────────────
  *
- * Each builder returns the body component with parameters matching
+ * Each builder returns the header + body components matching
  * the Meta-approved template variables ({{1}}, {{2}}, etc.).
+ * All templates have IMAGE header + BODY text params + static footer/buttons.
  * All templates use Indonesian language.
  */
 
-function bodyParams(params: string[]): TemplateComponent[] {
+const HEADER_IMAGE_URL =
+  process.env.WHATSAPP_HEADER_IMAGE_URL ||
+  "https://smartcemetary.web.id/banner-makam.png";
+
+function templateComponents(params: string[]): TemplateComponent[] {
   return [
+    {
+      type: "header",
+      parameters: [
+        { type: "image", image: { link: HEADER_IMAGE_URL } },
+      ],
+    },
     {
       type: "body",
       parameters: params.map((text) => ({ type: "text" as const, text })),
@@ -141,6 +152,8 @@ async function sendAndLogTemplate(
   templateName: string,
   params: string[]
 ): Promise<SendResult> {
+  const components = templateComponents(params);
+
   const payload = {
     messaging_product: "whatsapp",
     to: recipientPhone,
@@ -148,7 +161,7 @@ async function sendAndLogTemplate(
     template: {
       name: templateName,
       language: { code: "id" },
-      components: bodyParams(params),
+      components,
     },
   };
 
@@ -156,22 +169,26 @@ async function sendAndLogTemplate(
     recipientPhone,
     templateName,
     "id",
-    bodyParams(params)
+    components
   );
 
-  const logEntry = {
-    pengajuan_id: pengajuanId,
-    recipient_number: recipientPhone,
-    template_name: templateName,
-    payload: payload as unknown as Record<string, unknown>,
-    status: result.success ? ("success" as const) : ("failed" as const),
-    error_message: result.success ? undefined : result.error,
-    api_response: result.success
-      ? (result.data as unknown as Record<string, unknown>)
-      : undefined,
-  };
-
-  const log = await insertLog(logEntry);
+  // Attempt to persist log — failure to log does NOT hide the KirimDev result
+  let log: WhatsAppLog | undefined;
+  try {
+    log = await insertLog({
+      pengajuan_id: pengajuanId,
+      recipient_number: recipientPhone,
+      template_name: templateName,
+      payload: payload as unknown as Record<string, unknown>,
+      status: result.success ? "success" : "failed",
+      error_message: result.success ? undefined : result.error,
+      api_response: result.success
+        ? (result.data as unknown as Record<string, unknown>)
+        : undefined,
+    });
+  } catch (logErr) {
+    console.error("[WA-SENDER] Failed to persist log:", logErr);
+  }
 
   if (result.success) {
     return { success: true, log };
@@ -179,10 +196,10 @@ async function sendAndLogTemplate(
   return { success: false, log, error: result.error };
 }
 
-/* ── Template 1: application_created ─────────────────────────
+/* ── Template 1: pengajuan_dibuat ───────────────────────
  * {{1}} = Applicant Name
  * {{2}} = Deceased Name
- * {{3}} = Application Number (EKM-XXXX-XXXX)
+ * {{3}} = Application Number
  * {{4}} = Application Date
  */
 
@@ -194,7 +211,7 @@ export async function sendApplicationCreated(
   createdDate: string
 ): Promise<SendResult> {
   const refNumber = generateReferenceNumber(pengajuanId);
-  return sendAndLogTemplate(pengajuanId, applicantPhone, "application_created", [
+  return sendAndLogTemplate(pengajuanId, applicantPhone, "pengajuan_dibuat", [
     applicantName,
     deceasedName,
     refNumber,
@@ -202,7 +219,7 @@ export async function sendApplicationCreated(
   ]);
 }
 
-/* ── Template 2: application_approved ─────────────────────────
+/* ── Template 2: pengajuan_disetujui ────────────────────
  * {{1}} = Applicant Name
  * {{2}} = Deceased Name
  * {{3}} = Application Number
@@ -219,7 +236,7 @@ export async function sendApplicationApproved(
   nomor: string
 ): Promise<SendResult> {
   const refNumber = generateReferenceNumber(pengajuanId);
-  return sendAndLogTemplate(pengajuanId, applicantPhone, "application_approved", [
+  return sendAndLogTemplate(pengajuanId, applicantPhone, "pengajuan_disetujui", [
     applicantName,
     deceasedName,
     refNumber,
@@ -228,10 +245,10 @@ export async function sendApplicationApproved(
   ]);
 }
 
-/* ── Template 3: revision_request ────────────────────────────
+/* ── Template 3: permintaan_revisi ──────────────────────
  * {{1}} = Applicant Name
  * {{2}} = Deceased Name
- * {{3}} = List of documents requiring revision
+ * {{3}} = Documents needing revision
  * {{4}} = Staff Notes
  */
 
@@ -243,7 +260,7 @@ export async function sendRevisionRequest(
   revisionDocs: string,
   staffNotes: string
 ): Promise<SendResult> {
-  return sendAndLogTemplate(pengajuanId, applicantPhone, "revision_request", [
+  return sendAndLogTemplate(pengajuanId, applicantPhone, "permintaan_revisi", [
     applicantName,
     deceasedName,
     revisionDocs,
@@ -251,11 +268,11 @@ export async function sendRevisionRequest(
   ]);
 }
 
-/* ── Template 4: application_rejected ─────────────────────────
+/* ── Template 4: pengajuan_ditolak ──────────────────────
  * {{1}} = Applicant Name
  * {{2}} = Deceased Name
  * {{3}} = Application Number
- * {{4}} = Reason for Rejection
+ * {{4}} = Rejection Reason
  */
 
 export async function sendApplicationRejected(
@@ -266,37 +283,11 @@ export async function sendApplicationRejected(
   rejectionReason: string
 ): Promise<SendResult> {
   const refNumber = generateReferenceNumber(pengajuanId);
-  return sendAndLogTemplate(pengajuanId, applicantPhone, "application_rejected", [
+  return sendAndLogTemplate(pengajuanId, applicantPhone, "pengajuan_ditolak", [
     applicantName,
     deceasedName,
     refNumber,
     rejectionReason,
-  ]);
-}
-
-/* ── Template 5: grave_plot_allocated ─────────────────────────
- * {{1}} = Applicant Name
- * {{2}} = Deceased Name
- * {{3}} = Grave Block
- * {{4}} = Plot Number
- * {{5}} = Date of Burial
- */
-
-export async function sendGravePlotAllocated(
-  pengajuanId: string,
-  applicantName: string,
-  deceasedName: string,
-  applicantPhone: string,
-  blok: string,
-  nomor: string,
-  burialDate: string
-): Promise<SendResult> {
-  return sendAndLogTemplate(pengajuanId, applicantPhone, "grave_plot_allocated", [
-    applicantName,
-    deceasedName,
-    blok,
-    nomor,
-    formatDate(burialDate),
   ]);
 }
 
@@ -320,16 +311,14 @@ export async function sendTestMessage(
   }
 
   const params: string[] = [];
-  if (templateName === "application_created") {
+  if (templateName === "pengajuan_dibuat") {
     params.push("Test User", "Test Deceased", "EKM-TEST-0001", "1 Januari 2026");
-  } else if (templateName === "application_approved") {
+  } else if (templateName === "pengajuan_disetujui") {
     params.push("Test User", "Test Deceased", "EKM-TEST-0001", "Blok A", "1");
-  } else if (templateName === "revision_request") {
+  } else if (templateName === "permintaan_revisi") {
     params.push("Test User", "Test Deceased", "Foto KTP", "Mohon upload ulang KTP");
-  } else if (templateName === "application_rejected") {
+  } else if (templateName === "pengajuan_ditolak") {
     params.push("Test User", "Test Deceased", "EKM-TEST-0001", "Data tidak sesuai");
-  } else if (templateName === "grave_plot_allocated") {
-    params.push("Test User", "Test Deceased", "Blok A", "1", "1 Januari 2026");
   } else {
     return { success: false, error: `Template "${templateName}" tidak dikenal` };
   }
@@ -352,7 +341,19 @@ export async function resendMessage(logId: string): Promise<SendResult> {
   };
 
   const templateName = log.template_name;
-  const components = loggedPayload?.template?.components;
+
+  // Extract body text params from the stored log payload
+  const bodyComponent = loggedPayload?.template?.components?.find(
+    (c) => c.type === "body"
+  );
+  const bodyTextParams = (bodyComponent?.parameters || [])
+    .filter((p) => "text" in p)
+    .map((p) => String((p as { text: string }).text));
+
+  // Rebuild components with header image + body params
+  const components = bodyTextParams.length > 0
+    ? templateComponents(bodyTextParams)
+    : undefined;
 
   const result = await sendTemplateMessage(
     log.recipient_number,

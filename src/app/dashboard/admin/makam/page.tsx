@@ -194,17 +194,17 @@ export default function AdminMakamPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Kelola Makam</h1>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">Kelola Makam</h1>
           <p className="text-slate-500 text-sm mt-1">
             Kelola semua data makam dan lokasi
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -257,10 +257,10 @@ export default function AdminMakamPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-100">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <h3 className="font-bold text-slate-900 text-lg">Daftar Makam</h3>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <h3 className="font-bold text-slate-900 text-base">Daftar Makam</h3>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search
@@ -295,12 +295,12 @@ export default function AdminMakamPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="text-left px-6 py-4">Lokasi</th>
-                  <th className="text-left px-6 py-4">Jenazah</th>
-                  <th className="text-left px-6 py-4">Pemilik/Pemohon</th>
-                  <th className="text-left px-6 py-4">Status</th>
-                  <th className="text-left px-6 py-4">Tanggal</th>
+                <tr className="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="text-left px-5 py-3.5">Lokasi</th>
+                  <th className="text-left px-5 py-3.5">Jenazah</th>
+                  <th className="text-left px-5 py-3.5">Pemilik/Pemohon</th>
+                  <th className="text-left px-5 py-3.5">Status</th>
+                  <th className="text-left px-5 py-3.5">Tanggal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -309,7 +309,7 @@ export default function AdminMakamPage() {
                     key={makam.id}
                     className="hover:bg-slate-50 transition-colors"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
                         <MapPin size={16} className="text-slate-400 shrink-0" />
                         <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-medium whitespace-nowrap">

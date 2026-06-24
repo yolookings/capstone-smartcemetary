@@ -172,10 +172,10 @@ export default function AdminNotificationsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Notifikasi</h1>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">Notifikasi</h1>
           <p className="text-slate-500 text-sm mt-1">
             {unreadCount > 0 
               ? `${unreadCount} notifikasi belum dibaca` 
@@ -201,10 +201,10 @@ export default function AdminNotificationsPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+          className={`px-3.5 py-2 rounded-lg font-medium text-xs transition-colors ${
             filter === 'all' 
               ? 'bg-primary text-white' 
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
@@ -214,7 +214,7 @@ export default function AdminNotificationsPage() {
         </button>
         <button
           onClick={() => setFilter('unread')}
-          className={`px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+          className={`px-3.5 py-2 rounded-lg font-medium text-xs transition-colors ${
             filter === 'unread' 
               ? 'bg-primary text-white' 
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
@@ -224,7 +224,7 @@ export default function AdminNotificationsPage() {
         </button>
         <button
           onClick={() => setFilter('read')}
-          className={`px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+          className={`px-3.5 py-2 rounded-lg font-medium text-xs transition-colors ${
             filter === 'read' 
               ? 'bg-primary text-white' 
               : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
@@ -261,16 +261,16 @@ export default function AdminNotificationsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         {filteredNotifications.length > 0 ? (
           <div className="divide-y divide-slate-100">
             {filteredNotifications.map((notification) => (
               <div 
                 key={notification.id} 
-                className={`p-6 hover:bg-slate-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''}`}
+                className={`p-4 hover:bg-slate-50 transition-colors ${!notification.read ? 'bg-blue-50/50' : ''}`}
               >
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                     !notification.read ? 'bg-blue-100' : 'bg-slate-100'
                   }`}>
                     {getIcon(notification.type)}

@@ -170,7 +170,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-neutral">
-      <div className="lg:flex">
+      <div className="lg:flex min-h-screen">
         
         {sidebarOpen && (
           <div 
@@ -211,28 +211,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <NavContent vertical />
         </aside>
 
-        <div className="flex-1 overflow-hidden">
-          <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-4 lg:px-12 flex-shrink-0">
+        <div className="flex-1 flex flex-col min-h-screen">
+          <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-3 text-slate-400 hover:text-slate-600 hover:bg-neutral rounded-xl transition-all lg:hidden"
+              className="p-2.5 text-slate-400 hover:text-slate-600 hover:bg-neutral rounded-xl transition-all lg:hidden"
             >
-              <Menu size={24} />
+              <Menu size={22} />
             </button>
             
-            <div className="hidden lg:block">
-              <span className="text-xl font-extrabold text-slate-900 tracking-tight">Admin Panel</span>
-            </div>
+            <div className="hidden lg:block" />
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 rounded-full">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 rounded-full">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                <span className="text-sm font-bold text-primary uppercase tracking-wider">Online</span>
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">Online</span>
               </div>
             </div>
           </header>
 
-          <main className="p-4 lg:p-12">
+          <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
             {children}
           </main>
         </div>

@@ -153,14 +153,14 @@ export default function AdminPengaturanPage() {
   }
 
   return (
-    <div className="p-4 space-y-4 w-full max-w-2xl">
+    <div className="space-y-6 w-full max-w-4xl">
       <div>
-        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Pengaturan Akun</h1>
+        <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">Pengaturan Akun</h1>
         <p className="text-slate-500 text-sm mt-1">Kelola informasi akun Anda</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
             <User className="text-blue-600" size={20} />
           </div>
@@ -244,8 +244,8 @@ export default function AdminPengaturanPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
             <Lock className="text-amber-600" size={20} />
           </div>
@@ -340,11 +340,10 @@ export default function AdminPengaturanPage() {
 /* ── WhatsApp Settings Card ─────────────────────────────────── */
 
 const TEMPLATES = [
-  { value: "application_created", label: "Pengajuan Dibuat" },
-  { value: "application_approved", label: "Pengajuan Disetujui" },
-  { value: "revision_request", label: "Permintaan Revisi" },
-  { value: "application_rejected", label: "Pengajuan Ditolak" },
-  { value: "grave_plot_allocated", label: "Alokasi Makam" },
+  { value: "pengajuan_dibuat", label: "Pengajuan Dibuat" },
+  { value: "pengajuan_disetujui", label: "Pengajuan Disetujui" },
+  { value: "permintaan_revisi", label: "Permintaan Revisi" },
+  { value: "pengajuan_ditolak", label: "Pengajuan Ditolak" },
 ];
 
 function WhatsAppSettingsCard() {
@@ -355,7 +354,7 @@ function WhatsAppSettingsCard() {
   const [checking, setChecking] = useState(true);
 
   const [testPhone, setTestPhone] = useState("");
-  const [testTemplate, setTestTemplate] = useState("application_created");
+  const [testTemplate, setTestTemplate] = useState("pengajuan_dibuat");
   const [sending, setSending] = useState(false);
   const [testResult, setTestResult] = useState<{
     success: boolean;
@@ -415,8 +414,8 @@ function WhatsAppSettingsCard() {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+      <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
           <MessageSquare className="text-green-600" size={20} />
         </div>

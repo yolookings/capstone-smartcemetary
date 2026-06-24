@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { notifyUserStatusChange, notifyPlotAllocated } from "@/lib/whatsapp";
+import { notifyUserStatusChange } from "@/lib/whatsapp";
 import { isWhatsAppConfigured } from "@/lib/whatsapp-sender";
 import pool from "@/lib/db";
 
@@ -447,16 +447,9 @@ async function sendNotification(
         rejectionReason: notes || "",
       }).catch(e => console.error("[WA ERROR]", e));
     } else if (plotAllocated) {
-      // Plot allocated without status change (e.g., PENDING → PENDING + allocation)
-      await notifyPlotAllocated({
-        userPhone,
-        pengajuanId,
-        applicantName,
-        deceasedName,
-        blok: blok!,
-        nomor: nomor!,
-        burialDate,
-      }).catch(e => console.error("[WA ERROR]", e));
+      // Plot allocated without status change — no dedicated template for this
+      // The allocation info will be sent when status is updated to APPROVED
+      console.log("[WA] Plot allocated (no template) — skipping notification");
     }
   } catch (e) {
     console.error("[NOTIFICATION ERROR]", e);

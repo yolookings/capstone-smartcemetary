@@ -155,23 +155,23 @@ export default function AdminPengajuanPage() {
   }
 
   return (
-    <div className="space-y-8 pb-20">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Validasi Pengajuan</h1>
-          <p className="text-secondary text-sm mt-2">Verifikasi dan approve pengajuan makam</p>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">Validasi Pengajuan</h1>
+          <p className="text-secondary text-sm mt-1">Verifikasi dan approve pengajuan makam</p>
         </div>
         <button
           onClick={() => fetchData(true)}
           disabled={refreshing}
-          className="bg-white px-6 py-3 rounded-xl font-bold border border-slate-200 text-slate-600 hover:text-primary hover:border-primary transition-all flex items-center gap-2 shadow-sm"
+          className="bg-white px-5 py-2.5 rounded-xl font-bold border border-slate-200 text-slate-600 hover:text-primary hover:border-primary transition-all flex items-center gap-2 shadow-sm text-sm self-start"
         >
-          <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+          <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
           Refresh
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard 
           label="Total" 
           value={stats.total} 
@@ -214,10 +214,10 @@ export default function AdminPengajuanPage() {
         />
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-          <h3 className="font-bold text-xl text-slate-900">Daftar Pengajuan</h3>
-          <div className="flex items-center gap-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h3 className="font-bold text-lg text-slate-900">Daftar Pengajuan</h3>
+          <div className="flex items-center gap-3">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
@@ -225,10 +225,10 @@ export default function AdminPengajuanPage() {
                 placeholder="Cari email atau nama..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary w-56"
+                className="pl-9 pr-3.5 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary w-48"
               />
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
               <Filter size={16} />
               <span>Menampilkan {filteredList.length} dari {stats.total} pengajuan</span>
             </div>
@@ -236,27 +236,27 @@ export default function AdminPengajuanPage() {
         </div>
         
         {filteredList.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full">
               <thead>
                 <tr className="bg-neutral text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="text-left px-8 py-5">No. Referensi</th>
-                  <th className="text-left px-8 py-5">Pemohon</th>
-                  <th className="text-left px-8 py-5">Status</th>
-                  <th className="text-left px-8 py-5">Tanggal</th>
-                  <th className="text-right px-8 py-5">Aksi</th>
+                  <th className="text-left px-6 py-4">No. Referensi</th>
+                  <th className="text-left px-6 py-4">Pemohon</th>
+                  <th className="text-left px-6 py-4">Status</th>
+                  <th className="text-left px-6 py-4">Tanggal</th>
+                  <th className="text-right px-6 py-4">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredList.map((p) => (
                   <tr key={p.id} className="hover:bg-neutral transition-all">
-                    <td className="px-8 py-5">
+                    <td className="px-6 py-4">
                       <p className="text-sm font-bold text-slate-900 font-manrope">{generateReferenceNumber(p.id)}</p>
                       <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: #{p.id.slice(0, 8).toUpperCase()}</p>
                     </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center text-white font-bold">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center text-white font-bold text-sm">
                           {(p.makam?.applicant_name || p.profiles?.full_name)?.charAt(0) || p.profiles?.email?.charAt(0) || '?'}
                         </div>
                         <div>
@@ -265,24 +265,24 @@ export default function AdminPengajuanPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusColor(p.status)}`}>
                         {getStatusLabel(p.status)}
                       </span>
                     </td>
-                    <td className="px-8 py-5 text-sm text-slate-500 font-medium">
+                    <td className="px-6 py-4 text-sm text-slate-500 font-medium">
                       {new Date(p.created_at).toLocaleDateString('id-ID', { 
                         day: 'numeric', 
                         month: 'short',
                         year: 'numeric'
                       })}
                     </td>
-                    <td className="px-8 py-5 text-right">
+                    <td className="px-6 py-4 text-right">
                       <Link 
                         href={`/dashboard/admin/pengajuan/${p.id}`}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-dark transition-all shadow-lg shadow-primary/20"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary-dark transition-all shadow-sm shadow-primary/20"
                       >
-                        <Eye size={16} />
+                        <Eye size={14} />
                         Verifikasi
                       </Link>
                     </td>

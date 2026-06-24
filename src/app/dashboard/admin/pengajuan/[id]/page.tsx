@@ -286,7 +286,7 @@ export default function PengajuanDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6">
       {/* Back Navigation */}
       <div className="flex items-center gap-4">
         <Link
