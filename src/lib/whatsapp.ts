@@ -8,7 +8,6 @@ import {
   sendApplicationApproved,
   sendApplicationRejected,
   sendRevisionRequest,
-  sendGravePlotAllocated,
   isWhatsAppConfigured,
 } from "@/lib/whatsapp-sender";
 
@@ -268,40 +267,6 @@ export async function notifyUserStatusChange(data: {
     default:
       return { success: false, error: `Status tidak dikenal: ${data.status}` };
   }
-}
-
-/* ── Plot Allocation Notification (Template-based) ────────── */
-
-export async function notifyPlotAllocated(data: {
-  userPhone: string;
-  pengajuanId: string;
-  applicantName: string;
-  deceasedName: string;
-  blok: string;
-  nomor: string;
-  burialDate: string;
-}) {
-  console.log("[WA] notifyPlotAllocated called:", data.pengajuanId);
-
-  if (!isWhatsAppConfigured()) {
-    console.log("[WA] Skipping — Kirimdev not configured");
-    return { success: false, error: "Kirimdev not configured" };
-  }
-
-  if (!isValidPhone(data.userPhone)) {
-    console.log("[WA] Skipping — invalid phone:", data.userPhone);
-    return { success: false, error: "Invalid phone" };
-  }
-
-  return sendGravePlotAllocated(
-    data.pengajuanId,
-    data.applicantName,
-    data.deceasedName,
-    data.userPhone,
-    data.blok,
-    data.nomor,
-    data.burialDate
-  );
 }
 
 /* ── Submission Confirmation (Template-based) ─────────────── */

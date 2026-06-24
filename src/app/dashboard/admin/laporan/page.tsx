@@ -268,16 +268,16 @@ export default function AdminLaporanPage() {
     : 0;
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Laporan</h1>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">Laporan</h1>
           <p className="text-slate-500 text-sm mt-1">Statistik dan ringkasan sistem</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
               <FileText size={24} />
@@ -291,7 +291,7 @@ export default function AdminLaporanPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
               <Users size={24} />
@@ -307,7 +307,7 @@ export default function AdminLaporanPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-5 text-white">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
               <MapPin size={24} />
@@ -322,8 +322,8 @@ export default function AdminLaporanPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
           <h3 className="font-bold text-slate-900 text-lg mb-6">Status Pengajuan</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -382,8 +382,8 @@ export default function AdminLaporanPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h3 className="font-bold text-slate-900 text-lg mb-6">Status Makam</h3>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <h3 className="font-bold text-slate-900 text-base mb-5">Status Makam</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -432,9 +432,9 @@ export default function AdminLaporanPage() {
       </div>
 
       {/* Monthly Chart Section */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <h3 className="font-bold text-slate-900 text-lg">Tren Pengajuan Bulanan</h3>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+          <h3 className="font-bold text-slate-900 text-base">Tren Pengajuan Bulanan</h3>
           <div className="flex items-center gap-3">
             <select
               value={selectedMonth}

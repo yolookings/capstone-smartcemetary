@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-neutral">
-      <main className="container mx-auto py-12 px-4 lg:px-12">
+      <main className="w-full">
         {children}
       </main>
     </div>
